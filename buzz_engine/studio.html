@@ -192,7 +192,10 @@ function render(){
       <label class="f">Channel<select id="f-cat">${S.categories.map(c=>`<option ${P.category===c?"selected":""}>${c}</option>`).join("")}</select></label>
       <label class="f">Language<select id="f-lang">${langOpts}</select></label>
       <label class="f">Made by<input type="text" id="f-author" value="${esc(P.author)}" placeholder="optional, shown in the credits"></label>
+      <label class="f">Pack number<input type="number" id="f-num" min="1" max="999" value="${P.number}"></label>
     </div>
+    <div class="muted" style="font-size:.8rem">Every pack needs its own number. Installing a pack replaces any other pack with the same number, so the app won't let you pick one that's already installed in RPCS3 or used by another of your packs.</div>
+    <div id="numwarn"></div>
     <label class="f">Description<input type="text" id="f-desc" value="${esc(P.description)}"></label>
     <label class="switch"><input type="checkbox" id="f-audio" ${P.audio?"checked":""}> Host reads the questions aloud <span class="muted" id="voicenote"></span></label>
   </section>
@@ -223,6 +226,8 @@ function render(){
   $("#f-title").onchange = e=>save({title:e.target.value}).then(()=>{loadState(); $(".head h2").textContent=P.title;});
   $("#f-desc").onchange = e=>save({description:e.target.value});
   $("#f-author").onchange = e=>save({author:e.target.value});
+  $("#f-num").onchange = async e=>{ try{ await save({number:parseInt(e.target.value,10)}); head(); numWarn(); toast("Pack number changed to "+P.number); }catch(err){ e.target.value=P.number; } };
+  numWarn();
   $("#f-cat").onchange = e=>save({category:e.target.value});
   $("#f-lang").onchange = e=>save({language:e.target.value}).then(voiceNote);
   $("#f-audio").onchange = e=>save({audio:e.target.checked}).then(voiceNote);
@@ -366,6 +371,11 @@ function renderRoundsStatus(){
 }
 
 // ---------- generate
+function numWarn(){
+  const c = P.number_conflicts || [], el = $("#numwarn"), go = $("#gobtn");
+  if(el) el.innerHTML = c.length ? `<div class="warn">${c.map(esc).join("<br>")}. Pick another number, for example ${P.free_number}.</div>` : "";
+  if(go){ go.disabled = c.length>0; go.title = c.length ? "Pick a free pack number in step 1 first" : ""; }
+}
 async function startGenerate(){
   const btn=$("#gobtn"); btn.disabled=true; lastResult=null;
   $("#golog").innerHTML=`<div class="log" id="logbox">Starting…</div>`;

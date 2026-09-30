@@ -227,7 +227,8 @@ def cmd_export(a):
 
 def cmd_generate(a):
     from buzz_engine.generate import generate
-    r = generate(os.path.abspath(a.pack), language=a.language, audio=not a.no_voice)
+    r = generate(os.path.abspath(a.pack), language=a.language, audio=not a.no_voice,
+                 rpcs3=settings().get("rpcs3"), allow_replace=a.allow_replace)
     print("PKG:", r["pkg"])
 
 
@@ -321,6 +322,8 @@ def main():
     p.add_argument("pack")
     p.add_argument("--language", help="3-letter pack language (GBR, ESP, PRT, DEU, ...)")
     p.add_argument("--no-voice", action="store_true")
+    p.add_argument("--allow-replace", action="store_true",
+                   help="build even if a different pack with this number is installed in RPCS3")
     p.set_defaults(fn=cmd_generate)
     p = sub.add_parser("setup", help="one-time setup from your own game files")
     p.add_argument("--eboot", help="decrypted EBOOT.elf (RPCS3 > Utilities > Decrypt PS3 Binaries)")

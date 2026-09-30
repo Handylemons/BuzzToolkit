@@ -1,3 +1,11 @@
+# Buzz Toolkit 0.1.1
+
+* **Pack numbers are protected.** Installing a pack replaces any pack with the same number, so the
+  app now checks what's installed in RPCS3 (and your other packs) before it lets a number be used:
+  new packs get a free number, step 1 has a pack-number field that refuses taken numbers, and
+  Generate / *Copy straight into RPCS3* refuse to replace a different pack. Rebuilding the same
+  pack is still allowed. Command line: `generate --allow-replace` overrides the check.
+
 # Buzz Toolkit 0.1.0 - first release
 
 ## Setup

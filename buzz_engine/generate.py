@@ -22,13 +22,20 @@ import buzz_pkg  # noqa: E402
 from . import voices  # noqa: E402
 
 
-def generate(project, language=None, audio=True, out_dir=None, progress=print):
+def generate(project, language=None, audio=True, out_dir=None, progress=print, rpcs3=None,
+             allow_replace=False):
+    """rpcs3: the RPCS3 folder, to refuse a pack number another installed pack already has
+    (allow_replace skips that check)."""
     import buzz_tools
     buzz_tools.ffmpeg()                                   # clear message if ffmpeg is missing
-    from . import keys
+    from . import keys, pack_numbers
     keys.get("klic")                                      # ... and if setup hasn't read the game keys
     with open(project, encoding="utf-8") as f:
         C = json.load(f)
+    clash = [] if allow_replace else pack_numbers.conflicts(C, rpcs3)
+    if clash:
+        raise RuntimeError("%s. Pick another pack number (step 1 in Buzz Pack Studio, free: %d)."
+                           % ("; ".join(clash), pack_numbers.free_number(rpcs3)))
     lang = (language or C.get("language") or "GBR").upper()
     out_dir = out_dir or os.path.join(os.path.dirname(os.path.abspath(project)), "output")
     os.makedirs(out_dir, exist_ok=True)
@@ -59,9 +66,16 @@ def generate(project, language=None, audio=True, out_dir=None, progress=print):
             "content_id": res["content_id"], "voiced": res["voiced"], "voice": voice_note}
 
 
-def install_edat(edat_path, number, lang, rpcs3):
+def install_edat(edat_path, number, lang, rpcs3, allow_replace=False):
     """Copy the pack straight into RPCS3 (RPCS3's own PKG installer needs RPCS3 closed for the
-    command line; File > Install Packages works any time)."""
+    command line; File > Install Packages works any time). Refuses to replace a DIFFERENT pack
+    with the same number (a newer build of the same pack is fine)."""
+    from . import pack_numbers
+    new_cid = pack_numbers.edat_content_id(edat_path) or ""
+    for cid in pack_numbers.installed(rpcs3).get(int(number), []):
+        if not allow_replace and cid[-9:] != new_cid[-9:]:
+            raise ValueError("pack %d is already installed in RPCS3 as a different pack (%s) - give this "
+                             "pack another number and generate again" % (number, cid))
     d = os.path.join(rpcs3, "dev_hdd0", "game", buzz_pkg.BUZZ_DLC_TITLE, "USRDIR", "PACK%04d" % number)
     os.makedirs(d, exist_ok=True)
     dst = os.path.join(d, "%sPACK%04d.EDAT" % (lang, number))

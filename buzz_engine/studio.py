@@ -24,7 +24,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
 import build_pack  # noqa: E402
-from buzz_engine import content, game_update, importers, online, plans, rounds, voices  # noqa: E402
+from buzz_engine import content, game_update, importers, online, pack_numbers, plans, rounds, voices  # noqa: E402
 from buzz_engine.generate import generate, install_edat  # noqa: E402
 
 PROJECTS = os.path.join(ROOT, "content", "projects")    # pack projects (content/packs = online catalogue)
@@ -65,26 +65,30 @@ def save(pid, pack):
     json.dump(pack, open(p, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
 
 
-def used_numbers():
-    nums = set()
-    r = settings().get("rpcs3")
-    if r:
-        base = os.path.join(r, "dev_hdd0", "game", "BCES00098", "USRDIR")
-        for d in os.listdir(base) if os.path.isdir(base) else []:
-            m = re.match(r"PACK(\d{4})$", d)
-            if m:
-                nums.add(int(m.group(1)))
+def other_projects(pid=None):
+    """[(title, pack)] of every project except pid."""
+    out = []
     for d in os.listdir(PROJECTS) if os.path.isdir(PROJECTS) else []:
+        if d == pid:
+            continue
         try:
-            nums.add(int(load(d)["pack_number"]))
+            p = load(d)
+            out.append((p["text"]["menu_name"], p))
         except Exception:
             pass
-    return nums
+    return out
+
+
+def used_numbers():
+    return set(pack_numbers.installed(settings().get("rpcs3"))) | {int(p["pack_number"]) for _, p in other_projects()}
 
 
 def free_number():
-    used = used_numbers()
-    return next(n for n in list(range(99, 69, -1)) + list(range(1, 70)) if n not in used)
+    return pack_numbers.free_number(settings().get("rpcs3"), [p["pack_number"] for _, p in other_projects()])
+
+
+def number_conflicts(pid, pack):
+    return pack_numbers.conflicts(pack, settings().get("rpcs3"), other_projects(pid))
 
 
 def hook_installed():
@@ -125,7 +129,8 @@ def project_view(pid):
             "audio": pack.get("audio", True), "author": pack.get("author", ""), "uppercase": pack.get("uppercase", True),
             "rounds4p": lineup_text(pack.get("rounds", {}).get("4p")), "rounds8p": lineup_text(pack.get("rounds", {}).get("8p")),
             "counts": counts, "rounds_status": rounds_status, "questions": qs, "credits": pack.get("credits", []),
-            "outputs": sorted(os.listdir(os.path.join(PROJECTS, pid, "output"))) if os.path.isdir(os.path.join(PROJECTS, pid, "output")) else []}
+            "outputs": sorted(os.listdir(os.path.join(PROJECTS, pid, "output"))) if os.path.isdir(os.path.join(PROJECTS, pid, "output")) else [],
+            "number_conflicts": number_conflicts(pid, pack), "free_number": free_number()}
 
 
 def state():
@@ -186,6 +191,14 @@ def act_save(a):
         pack["text"]["menu_name"] = pack["text"]["subject"] = pack["topic"] = t
     if "description" in a:
         pack["text"]["description"] = content.clean(a["description"], True)
+    if "number" in a:
+        trial = dict(pack, pack_number=int(a["number"]))
+        clash = number_conflicts(a["id"], trial)
+        if clash:
+            raise ValueError("%s - try %d" % ("; ".join(clash), free_number()))
+        pack["pack_number"] = trial["pack_number"]
+        pack["key_tag"] = str(trial["pack_number"])
+        pack["round_name"] = re.sub(r"\d+$", "", pack.get("round_name", "pack")) + str(trial["pack_number"])
     for k in ("category", "language", "audio", "author"):
         if k in a:
             pack[k] = a[k]
@@ -272,7 +285,7 @@ def act_generate(a):
             pack = load(a["id"])
             j["result"] = generate(project_path(a["id"]), language=a.get("language") or pack.get("language"),
                                    audio=bool(a.get("audio", pack.get("audio", True))),
-                                   progress=lambda m: j["log"].append(m))
+                                   progress=lambda m: j["log"].append(m), rpcs3=settings().get("rpcs3"))
         except (Exception, SystemExit) as e:          # SystemExit too: a job must always finish
             j["error"] = str(e)
             j["log"].append("FAILED: %s" % e)

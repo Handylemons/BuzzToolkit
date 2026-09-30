@@ -1,4 +1,4 @@
-# Buzz Toolkit 0.1.0
+# Buzz Toolkit 0.1.1
 
 Make your own quiz packs for **Buzz! Quiz World** (PS3, BCES00645) and host your own Buzz! online
 server, for playing on RPCS3 or a modded PS3.
@@ -41,7 +41,7 @@ sit side by side.
 
 ### 2. Unzip the toolkit
 
-Unzip `BuzzToolkit-0.1.0.zip` somewhere with space, for example `C:\BuzzToolkit`. Avoid putting it
+Unzip `BuzzToolkit-0.1.1.zip` somewhere with space, for example `C:\BuzzToolkit`. Avoid putting it
 inside a OneDrive or other synced folder.
 
 ### 3. Run Install.bat
@@ -99,7 +99,7 @@ You're ready to make packs. From now on, just double-click **Start Buzz Pack Stu
 ## Make a pack
 
 1. **Create** a pack (name on the left).
-2. **Pack**: channel, language, "made by", host voice on/off.
+2. **Pack**: channel, language, "made by", pack number, host voice on/off.
 3. **Questions**: drop in files (CSV, text, Moodle XML, Buzz online XML, JSON), pull from
    Open Trivia DB / OpenTriviaQA / The Trivia API, or write your own (picture questions and
    Point Stealer picture answers included). The app checks the game's limits
@@ -110,6 +110,25 @@ You're ready to make packs. From now on, just double-click **Start Buzz Pack Stu
    for each round itself. If a round shows *repeats* or *none*, add more questions of that kind.
 5. **Generate**: builds the pack and a `.pkg`. Install it in RPCS3 with
    **File → Install Packages/Raps/Edats** (or press *Copy straight into RPCS3*).
+
+### Pack numbers
+
+Every pack has a number (1 to 999), and **no two packs can share one**. The game keeps each pack in
+a folder named after its number, so installing a pack **replaces any other pack with the same
+number**, including official DLC. That happens whether you use *Copy straight into RPCS3* or
+RPCS3's *File → Install Packages*.
+
+The app protects you from this:
+
+* A new pack gets a free number automatically, skipping numbers already installed in RPCS3 or used
+  by your other packs. **Set your RPCS3 folder first**, so it can see what's installed.
+* You can change the number in step 1. Numbers that are already taken are refused, and the app
+  suggests a free one.
+* **Generate** and **Copy straight into RPCS3** refuse to go ahead if a *different* pack with that
+  number is installed. Rebuilding and reinstalling the *same* pack is fine; the app recognises it.
+
+If you install a PKG by hand, check its number first. The file name ends in it, for example
+`PubQuiz_GBR_PACK0096.pkg` is pack 96.
 
 Example question files are in `examples/`. A `.buzz.txt` file is the easiest way to share a pack
 as plain text (see `examples/pub_quiz.buzz.txt`).
