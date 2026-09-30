@@ -1,0 +1,32 @@
+Version: 1.2
+
+PPU-35a27ffa1242df7b535018a03b360b3e351a1584:
+  "Online: logged in when connected to the server":
+    Games:
+      "Buzz! Quiz World":
+        BCES00645: [ 01.02 ]
+    Author: "Buzz Toolkit"
+    Notes: "Network.IsLoggedIn (0x1dd3a0) -> true only when the server has sent its URI list, so the game still boots and plays offline when the server is down."
+    Patch Version: "1.1"
+    Patch:
+      - [ be32, 0x001dd3a0, 0x81223080 ]
+      - [ be32, 0x001dd3a4, 0x81290018 ]
+      - [ be32, 0x001dd3a8, 0x2f890000 ]
+      - [ be32, 0x001dd3ac, 0x38600000 ]
+      - [ be32, 0x001dd3b0, 0x4d9e0020 ]
+      - [ be32, 0x001dd3b4, 0x80090004 ]
+      - [ be32, 0x001dd3b8, 0x2f800000 ]
+      - [ be32, 0x001dd3bc, 0x4d9e0020 ]
+      - [ be32, 0x001dd3c0, 0x38600001 ]
+      - [ be32, 0x001dd3c4, 0x4e800020 ]
+
+  "60 FPS (frame interval 1)":
+    Games:
+      "Buzz! Quiz World":
+        BCES00645: [ 01.02 ]
+    Author: "Buzz Toolkit"
+    Notes: "Frame interval 2 -> 1 (display init li r0,2 @0x26cbac; SetVsyncTo30 li r3,2 @0x22eab4)."
+    Patch Version: "1.0"
+    Patch:
+      - [ be32, 0x0026cbac, 0x38000001 ]
+      - [ be32, 0x0022eab4, 0x38600001 ]

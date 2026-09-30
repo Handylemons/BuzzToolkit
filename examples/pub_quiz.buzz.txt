@@ -1,0 +1,16 @@
+#TITLE:Pub Quiz
+#PACK:96
+#CATEGORY:Knowledge
+#AUTHOR:Handylemons
+#ROUNDS4P:Point Builder, random(Pie Fight|Pass the Bomb), Over the Edge
+Q: What is the chemical symbol for gold?
+A: Au
+- Ag
+- Gd
+- Go
+
+Q: How many players are in a football team on the pitch?
+A: Eleven
+- Ten
+- Nine
+- Twelve

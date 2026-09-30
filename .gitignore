@@ -1,0 +1,28 @@
+# created on each user's machine - never commit
+tools/venv/
+tools/clone_venv/
+tools/tts_venv/
+tools/ffmpeg/
+tools/downloads/
+content/projects/*
+!content/projects/.gitkeep
+voice_models/
+voice_cache/
+dlc_test/
+buzz_engine/settings.json
+buzz_engine/game_keys.json
+buzz_engine/server_config.json
+__pycache__/
+*.pyc
+
+# game files and outputs (the toolkit ships none)
+*.pkg
+*.PKG
+*.EDAT
+*.edat
+*.SDAT
+*.PAK
+*.elf
+*.ELF
+EBOOT*
+*.rsf

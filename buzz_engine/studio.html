@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Buzz Pack Studio</title>
+<style>
+:root{
+  --ground:#F3F4F8; --panel:#FFFFFF; --ink:#151A2B; --muted:#5C6378; --rule:#DCDFE8; --soft:#EEF0F5;
+  --red:#D7263D; --red-ink:#FFFFFF; --red-soft:#FBE5E8;
+  --blue:#2F6BE0; --orange:#EE8416; --green:#23A057; --yellow:#E2B007;
+  --ok:#1E8E4E; --ok-bg:#E3F4EA; --warn:#A8620A; --warn-bg:#FCEFDB; --bad:#B42336; --bad-bg:#FBE4E7;
+  --shadow:0 1px 2px rgba(21,26,43,.06),0 4px 16px rgba(21,26,43,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0F121B; --panel:#171B27; --ink:#E8EBF3; --muted:#9BA3B7; --rule:#2A3044; --soft:#1F2434;
+  --red:#F04A5E; --red-soft:#3A1B22; --blue:#6B9BFF; --orange:#F7A04B; --green:#4CC57D; --yellow:#EDC540;
+  --ok:#4CC57D; --ok-bg:#16301F; --warn:#F0A54B; --warn-bg:#35270F; --bad:#FF6B7D; --bad-bg:#3A1B22;
+  --shadow:none; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --ground:#0F121B; --panel:#171B27; --ink:#E8EBF3; --muted:#9BA3B7; --rule:#2A3044; --soft:#1F2434;
+  --red:#F04A5E; --red-soft:#3A1B22; --blue:#6B9BFF; --orange:#F7A04B; --green:#4CC57D; --yellow:#EDC540;
+  --ok:#4CC57D; --ok-bg:#16301F; --warn:#F0A54B; --warn-bg:#35270F; --bad:#FF6B7D; --bad-bg:#3A1B22;
+  --shadow:none; color-scheme:dark;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif}
+h1,h2,h3{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;margin:0;line-height:1.2;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--rule);padding:20px 16px;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:12px}
+.buzzer{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a97,var(--red) 55%,#8e1224);box-shadow:0 3px 0 #6d0f1c;flex:none}
+.brand h1{font-size:1.15rem;font-weight:800;letter-spacing:.01em}
+.brand small{display:block;color:var(--muted);font-size:.78rem;font-weight:400}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.plist{display:flex;flex-direction:column;gap:4px}
+.plist button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px}
+.plist button:hover{background:var(--soft)}
+.plist button.on{background:var(--red-soft);color:var(--ink);font-weight:600}
+.plist .n{color:var(--muted);font-variant-numeric:tabular-nums;font-size:.85rem}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px;font-size:.88rem}
+main{padding:28px 32px 80px;display:flex;flex-direction:column;gap:22px;max-width:1080px;width:100%}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.head h2{font-size:1.9rem;font-weight:800}
+.head .sub{color:var(--muted)}
+.step{background:var(--panel);border:1px solid var(--rule);border-radius:14px;box-shadow:var(--shadow);padding:20px 22px;display:flex;flex-direction:column;gap:16px}
+.step>header{display:flex;align-items:center;gap:12px}
+.num{width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--panel);display:grid;place-items:center;font-weight:700;font-size:.9rem;flex:none}
+.step>header h3{font-size:1.15rem;font-weight:700}
+.step>header .hint{color:var(--muted);font-size:.9rem;margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:.85rem;color:var(--muted)}
+input[type=text],input[type=number],select,textarea{background:var(--ground);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;color:var(--ink);width:100%}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.btn{border:1px solid var(--rule);background:var(--panel);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn.small{padding:4px 10px;font-size:.85rem}
+.btn.go{background:var(--red);color:var(--red-ink);border:0;padding:14px 30px;font-size:1.1rem;border-radius:999px;box-shadow:0 4px 0 #7e1020}
+.btn.go:active{transform:translateY(3px);box-shadow:0 1px 0 #7e1020}
+.btn.go:disabled{opacity:.55;cursor:progress}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted)}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.76rem;font-weight:600;white-space:nowrap}
+.ok{color:var(--ok);background:var(--ok-bg)} .low{color:var(--warn);background:var(--warn-bg)} .none{color:var(--bad);background:var(--bad-bg)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--rule)}
+.tabs button{all:unset;cursor:pointer;padding:8px 14px;border-bottom:2px solid transparent;color:var(--muted);font-weight:600}
+.tabs button.on{color:var(--ink);border-color:var(--red)}
+.drop{border:2px dashed var(--rule);border-radius:12px;padding:22px;text-align:center;color:var(--muted);cursor:pointer}
+.drop.over{border-color:var(--blue);background:var(--soft)}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ans{display:flex;align-items:center;gap:8px;background:var(--ground);border:1px solid var(--rule);border-radius:10px;padding:4px 8px 4px 4px}
+.ans .dot{width:22px;height:22px;border-radius:50%;flex:none}
+.ans input[type=text]{border:0;background:transparent;padding:6px 2px}
+.ans .cnt{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.ans.correct{outline:2px solid var(--ok)}
+.d0{background:var(--blue)}.d1{background:var(--orange)}.d2{background:var(--green)}.d3{background:var(--yellow)}
+.cnt.over{color:var(--bad);font-weight:700}
+.qtable{width:100%;border-collapse:collapse;font-size:.9rem}
+.qwrap{max-height:420px;overflow:auto;border:1px solid var(--rule);border-radius:10px}
+.qtable th{position:sticky;top:0;background:var(--soft);text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:8px 10px}
+.qtable td{border-top:1px solid var(--rule);padding:7px 10px;vertical-align:top}
+.qtable td.a span{display:inline-block;margin:0 10px 2px 0}
+.qtable td.a span:first-child{color:var(--ok);font-weight:600}
+.qtable img{height:38px;border-radius:4px;vertical-align:middle;margin-right:4px}
+.track{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+.card{background:var(--ground);border:1px solid var(--rule);border-radius:12px;padding:10px 12px;min-width:170px;display:flex;flex-direction:column;gap:8px}
+.card .top{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.card .tools button{all:unset;cursor:pointer;padding:0 4px;color:var(--muted)}
+.card .tools button:hover{color:var(--ink)}
+.card.fixed{background:var(--soft);border-style:dashed;justify-content:center}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{border:1px solid var(--rule);border-radius:999px;padding:2px 9px;font-size:.8rem;cursor:pointer;background:var(--panel)}
+.chip.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.chip.dim{opacity:.45;text-decoration:line-through}
+.warn{color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:8px 12px;font-size:.9rem}
+.status{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.status div{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.88rem;padding:6px 10px;border-radius:8px;background:var(--ground)}
+.log{background:#0F1320;color:#D6DBEA;border-radius:10px;padding:12px 14px;font:13px/1.55 ui-monospace,Consolas,monospace;white-space:pre-wrap;max-height:260px;overflow:auto}
+.result{border:2px solid var(--ok);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.result code{font:13px ui-monospace,Consolas,monospace;word-break:break-all}
+.toast{position:fixed;right:20px;bottom:20px;background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:10px;max-width:420px;box-shadow:var(--shadow);z-index:10}
+.toast.err{background:var(--bad);color:#fff}
+.empty{padding:60px 20px;text-align:center;color:var(--muted)}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.switch input{width:18px;height:18px;accent-color:var(--red)}
+@media (max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--rule)}main{padding:20px 16px 60px}.answers{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand"><div class="buzzer" aria-hidden="true"></div><div><h1>Buzz Pack Studio</h1><small>Custom quiz packs for Buzz! Quiz World <span id="ver"></span></small></div></div>
+  <button class="btn" id="srvbtn" style="justify-content:space-between;display:flex;align-items:center"><span>Online server</span><span class="pill" id="srvpill">…</span></button>
+  <div class="label">Your packs</div>
+  <div class="plist" id="plist"></div>
+  <form id="newform" class="row" style="gap:6px">
+    <input type="text" id="newtitle" placeholder="New pack name" aria-label="New pack name" style="flex:1;min-width:0">
+    <button class="btn primary small" type="submit">Create</button>
+  </form>
+  <div class="side-foot">
+    <div class="label">Setup</div>
+    <label class="f">RPCS3 folder<input type="text" id="rpcs3" placeholder="folder containing rpcs3.exe"></label>
+    <button class="btn small" id="saverpcs3">Save folder</button>
+    <div id="updbox"></div>
+    <div id="ffbox"></div>
+    <div id="keysbox"></div>
+    <div id="hookbox"></div>
+    <div id="voicebox" class="muted"></div>
+  </div>
+</aside>
+<main id="main"><div class="empty">Create a pack on the left, or pick one to keep working on it.</div></main>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let S = null, P = null, qtab = "import", addKind = "standard", qfilter = "all", job = null, lastResult = null;
+const OTQA = ["general","animals","brain-teasers","celebrities","entertainment","for-kids","geography","history","hobbies","humanities","literature","movies","music","newest","people","rated","religion-faith","science-technology","sports","television","video-games","world"];
+const KINDS = {standard:"Standard", picture:"Picture", all_that_apply:"All That Apply", point_stealer:"Point Stealer"};
+
+function toast(msg, err=false){const t=$("#toast");t.textContent=msg;t.className="toast"+(err?" err":"");t.hidden=false;clearTimeout(t._h);t._h=setTimeout(()=>t.hidden=true,err?7000:3500);}
+async function api(path, body){
+  const r = await fetch(path, body===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j = await r.json(); if(!r.ok || j.error){toast(j.error||"Something went wrong", true); throw new Error(j.error);} return j;
+}
+const readFile = f => new Promise(res=>{const r=new FileReader();r.onload=()=>res({name:f.name,data:r.result});r.readAsDataURL(f);});
+
+async function loadState(){ S = await api("/api/state"); renderSide(); }
+function renderSide(){
+  $("#ver").textContent = S.version ? "· v" + S.version : "";
+  $("#plist").innerHTML = S.projects.length ? S.projects.map(p=>`<button class="${P&&P.id===p.id?"on":""}" data-id="${p.id}"><span>${esc(p.title)}</span><span class="n">#${p.number} · ${p.questions}q</span></button>`).join("") : `<span class="muted">No packs yet.</span>`;
+  $("#plist").querySelectorAll("button").forEach(b=>b.onclick=()=>openProject(b.dataset.id));
+  $("#rpcs3").value = S.rpcs3 || "";
+  $("#hookbox").innerHTML = S.hook ? `<span class="pill ok">Custom running orders on</span>` :
+    `<button class="btn small" id="hookbtn">Turn on custom running orders</button><div class="muted" style="font-size:.8rem">One-time change to your game's scripts (backed up): each pack plays its own rounds in the Pack Game menu.</div>`;
+  const hb = $("#hookbtn"); if(hb) hb.onclick = async()=>{ S = await api("/api/hook",{}); renderSide(); toast("Custom running orders enabled"); };
+  const U = S.update || {};
+  $("#updbox").innerHTML = !S.rpcs3 ? "" : U.ok ? `<span class="pill ok">Game update ${esc(U.want)} installed</span>` :
+    `<div class="warn" style="font-size:.85rem">Game update ${esc(U.want)} ${U.installed ? "needed (you have " + esc(U.installed) + ")" : "not installed"}. The toolkit is built on it.</div>` +
+    (U.downloaded ? `<button class="btn small" id="updinst">Install update into RPCS3</button><div class="muted" style="font-size:.8rem">Close RPCS3 first. RPCS3's own installer opens; when it's done, press Save folder to re-check.</div>`
+                  : `<button class="btn small" id="upddl">Download update from Sony</button><div class="muted" style="font-size:.8rem">Fetches the official ${esc(U.want)} update (22 MB) straight from Sony's PS3 update server and checks it.</div>`);
+  const ud = $("#upddl"); if(ud) ud.onclick = async()=>{ ud.disabled=true; ud.textContent="Downloading…"; try{ S = await api("/api/update",{}); renderSide(); toast("Update downloaded"); }catch(e){ ud.disabled=false; ud.textContent="Download update from Sony"; } };
+  const ui = $("#updinst"); if(ui) ui.onclick = async()=>{ await api("/api/update",{op:"install"}); toast("RPCS3's installer is opening"); };
+  $("#ffbox").innerHTML = S.ffmpeg ? `<span class="pill ok">ffmpeg found</span>` :
+    `<button class="btn small" id="ffbtn">Download ffmpeg</button><div class="muted" style="font-size:.8rem">Needed to build packs (pictures, audio). Free LGPL build, about 100 MB, saved inside the toolkit.</div>`;
+  const fb = $("#ffbtn"); if(fb) fb.onclick = async()=>{ fb.disabled=true; fb.textContent="Downloading…"; try{ S = await api("/api/ffmpeg",{}); renderSide(); toast("ffmpeg ready"); }catch(e){ fb.disabled=false; fb.textContent="Download ffmpeg"; } };
+  $("#keysbox").innerHTML = S.keys_ready ? `<span class="pill ok">Game keys read from your EBOOT</span>` :
+    `<label class="f">Your decrypted EBOOT (.elf)<input type="text" id="ebootk" placeholder="RPCS3: Utilities → Decrypt PS3 Binaries"></label><button class="btn small" id="keysbtn">Read game keys</button><div class="muted" style="font-size:.8rem">Needed once: packs are encrypted with the game's own key, which the toolkit doesn't ship.</div>`;
+  const kb = $("#keysbtn"); if(kb) kb.onclick = async()=>{ S = await api("/api/keys",{eboot:$("#ebootk").value.trim()}); renderSide(); toast("Game keys read"); };
+  $("#voicebox").innerHTML = "Host voices: " + (S.voices.length ? S.voices.map(v=>`${esc(v.lang)}${v.trained?" (trained)":""}`).join(", ") : "none yet");
+}
+$("#saverpcs3").onclick = async()=>{ S = await api("/api/settings",{rpcs3:$("#rpcs3").value.trim()}); renderSide(); toast("RPCS3 folder saved"); };
+$("#newform").onsubmit = async e=>{ e.preventDefault(); const t=$("#newtitle").value.trim(); if(!t) return;
+  const r = await api("/api/new",{title:t, number:S.free_number}); $("#newtitle").value=""; await loadState(); openProject(r.id); };
+
+async function openProject(id){ P = await api("/api/project?id="+encodeURIComponent(id)); lastResult=null; renderSide(); render(); }
+async function save(fields){ P = await api("/api/save", Object.assign({id:P.id}, fields)); renderRoundsStatus(); }
+
+function render(){
+  const m = $("#main");
+  const langOpts = S.languages.map(l=>`<option value="${l.code}" ${P.language===l.code?"selected":""}>${esc(l.name)} (${l.code})${l.voice?" · host voice":""}</option>`).join("");
+  m.innerHTML = `
+  <div class="head"><div><h2>${esc(P.title)}</h2><div class="sub">Pack #${P.number} · ${P.counts.standard+P.counts.picture+P.counts.all_that_apply+P.counts.point_stealer} questions</div></div></div>
+
+  <section class="step"><header><span class="num">1</span><h3>Pack</h3><span class="hint">How it appears in the game's menus</span></header>
+    <div class="grid">
+      <label class="f">Name<input type="text" id="f-title" value="${esc(P.title)}"></label>
+      <label class="f">Channel<select id="f-cat">${S.categories.map(c=>`<option ${P.category===c?"selected":""}>${c}</option>`).join("")}</select></label>
+      <label class="f">Language<select id="f-lang">${langOpts}</select></label>
+      <label class="f">Made by<input type="text" id="f-author" value="${esc(P.author)}" placeholder="optional, shown in the credits"></label>
+    </div>
+    <label class="f">Description<input type="text" id="f-desc" value="${esc(P.description)}"></label>
+    <label class="switch"><input type="checkbox" id="f-audio" ${P.audio?"checked":""}> Host reads the questions aloud <span class="muted" id="voicenote"></span></label>
+  </section>
+
+  <section class="step"><header><span class="num">2</span><h3>Questions</h3><span class="hint">Import files or online sources, or write your own</span></header>
+    <div class="tabs" id="qtabs">${["import","add","list"].map(t=>`<button data-t="${t}" class="${qtab===t?"on":""}">${{import:"Import",add:"Write a question",list:"All questions ("+P.questions.length+")"}[t]}</button>`).join("")}</div>
+    <div id="qbody"></div>
+  </section>
+
+  <section class="step"><header><span class="num">3</span><h3>Rounds</h3><span class="hint">Running order when this pack is played from the Pack Game menu</span></header>
+    <div class="row"><span class="label">Preset</span><select id="preset"><option value="">Choose a preset…</option>${Object.keys(S.presets).map(k=>`<option>${esc(k)}</option>`).join("")}</select></div>
+    <div><div class="label" style="margin-bottom:8px">4 players · <span id="count4"></span></div><div class="track" id="track4p"></div></div>
+    <div><div class="label" style="margin-bottom:8px">8 players · <span id="count8"></span></div><div class="track" id="track8p"></div></div>
+    <div id="rwarn"></div>
+    <div><div class="label" style="margin-bottom:4px">Question coverage (check only)</div>
+      <div class="muted" style="font-size:.8rem;margin-bottom:8px">How many of this pack's questions each round can draw from. Nothing to set here: the game picks questions for each round by itself. To raise a number, add more questions of that kind in step 2. <b>repeats</b> = fewer than the round likes, so some questions may come up twice; <b>none</b> = no questions of that kind yet. Faded rounds aren't in your running order.</div>
+      <div class="status" id="rstatus"></div></div>
+  </section>
+
+  <section class="step"><header><span class="num">4</span><h3>Generate</h3><span class="hint">Builds the pack and wraps it in an installable PKG</span></header>
+    <div class="row" style="gap:18px">
+      <button class="btn go" id="gobtn">Generate PKG</button>
+      <span class="muted" id="gosummary"></span>
+    </div>
+    <div class="row"><button class="btn" id="pubbtn">Publish to MyBuzz (online quizzes)</button><span class="muted">Also puts this pack's questions on your own Buzz server as online quizzes: nothing to install, play them from MyBuzz.</span></div>
+    <div id="golog"></div>
+  </section>`;
+  $("#f-title").onchange = e=>save({title:e.target.value}).then(()=>{loadState(); $(".head h2").textContent=P.title;});
+  $("#f-desc").onchange = e=>save({description:e.target.value});
+  $("#f-author").onchange = e=>save({author:e.target.value});
+  $("#f-cat").onchange = e=>save({category:e.target.value});
+  $("#f-lang").onchange = e=>save({language:e.target.value}).then(voiceNote);
+  $("#f-audio").onchange = e=>save({audio:e.target.checked}).then(voiceNote);
+  $("#qtabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{qtab=b.dataset.t; render();});
+  $("#preset").onchange = e=>{ const p=S.presets[e.target.value]; if(p){ save({rounds4p:p}).then(renderTracks); } };
+  $("#gobtn").onclick = startGenerate;
+  $("#pubbtn").onclick = async()=>{ const r = await api("/api/publish",{id:P.id}); toast(`Published ${r.questions} questions as ${r.quizzes} online quiz${r.quizzes>1?"zes":""}`); };
+  renderQ(); renderTracks(); renderRoundsStatus(); voiceNote();
+  if(lastResult) showResult(lastResult);
+}
+function voiceNote(){
+  const l = S.languages.find(x=>x.code===P.language);
+  const note = !P.audio ? "(off: silent host)" : (l && l.voice ? `(voice: ${l.voice})` : `(no ${P.language} host voice yet: the pack will be silent)`);
+  $("#voicenote").textContent = note;
+  $("#gosummary").textContent = `${l?l.name:P.language} · ${P.audio && l && l.voice ? "with host voice" : "no audio"} · ${(P.rounds4p||[]).length} rounds + Final Countdown`;
+}
+
+// ---------- questions
+function renderQ(){
+  const b = $("#qbody");
+  if(qtab==="import"){
+    b.innerHTML = `
+      <div class="drop" id="drop">Drop quiz files here or <u>browse</u><br><span style="font-size:.85rem">CSV · text (Aiken, Q:/A:, OpenTriviaQA, .buzz.txt) · XML (Moodle, Buzz online quiz, generic) · JSON</span><input type="file" id="files" multiple hidden accept=".csv,.tsv,.txt,.xml,.json"></div>
+      <div class="grid" style="align-items:end">
+        <label class="f">Online source<select id="src"><option value="">Choose…</option><option value="opentdb">Open Trivia DB (CC BY-SA)</option><option value="otqa">OpenTriviaQA (CC BY-SA)</option><option value="triviaapi">The Trivia API (non-commercial)</option></select></label>
+        <label class="f">Category<select id="srccat"><option value="">Any</option></select></label>
+        <label class="f">How many<input type="number" id="srcn" value="50" min="1" max="500"></label>
+        <button class="btn primary" id="srcgo">Import</button>
+      </div>
+      <label class="f">Or a web address of a quiz file<div class="row"><input type="text" id="url" placeholder="https://…" style="flex:1"><button class="btn" id="urlgo">Import</button></div></label>
+      <div id="impres" class="muted"></div>`;
+    const drop=$("#drop"), fi=$("#files");
+    drop.onclick=()=>fi.click();
+    drop.ondragover=e=>{e.preventDefault();drop.classList.add("over");}; drop.ondragleave=()=>drop.classList.remove("over");
+    drop.ondrop=e=>{e.preventDefault();drop.classList.remove("over");importFiles(e.dataTransfer.files);};
+    fi.onchange=()=>importFiles(fi.files);
+    $("#src").onchange=async e=>{
+      const c=$("#srccat");
+      if(e.target.value==="opentdb"){ c.innerHTML=`<option value="">Loading…</option>`; const r=await api("/api/opentdb",{}); c.innerHTML=`<option value="">Any</option>`+r.categories.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join(""); }
+      else if(e.target.value==="otqa"){ c.innerHTML=OTQA.map(x=>`<option>${x}</option>`).join(""); }
+      else if(e.target.value==="triviaapi"){ c.innerHTML=`<option value="">Any</option>`+["arts_and_literature","film_and_tv","food_and_drink","general_knowledge","geography","history","music","science","society_and_culture","sport_and_leisure"].map(x=>`<option>${x}</option>`).join(""); }
+    };
+    $("#srcgo").onclick=()=>{
+      const s=$("#src").value, c=$("#srccat").value, n=+$("#srcn").value||50; if(!s) return toast("Choose an online source",true);
+      const spec = s==="opentdb" ? `opentdb:amount=${n}`+(c?`&category=${c}`:"") : s==="otqa" ? `opentriviaqa:${c||"general"}` : `triviaapi:limit=${n}`+(c?`&categories=${c}`:"");
+      doImport({online:spec, limit: s==="otqa"? n : null});
+    };
+    $("#urlgo").onclick=()=>{ const u=$("#url").value.trim(); if(u) doImport({url:u}); };
+  } else if(qtab==="add"){
+    b.innerHTML = `
+      <div class="row">${Object.entries(KINDS).map(([k,v])=>`<button class="chip ${addKind===k?"on":""}" data-k="${k}">${v}</button>`).join("")}</div>
+      <label class="f">Question <span class="cnt" id="qcnt"></span><input type="text" id="aq" maxlength="140" placeholder="Type the question as it should appear"></label>
+      <div id="addbody"></div>
+      <div><button class="btn primary" id="addgo">Add question</button></div>`;
+    b.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{addKind=c.dataset.k;renderQ();});
+    counter($("#aq"),$("#qcnt"),93);
+    const ab=$("#addbody");
+    if(addKind==="point_stealer"){
+      ab.innerHTML = `<div class="muted">Four pictures are the answers. Pick which one is right.</div><div class="answers">${[0,1,2,3].map(i=>`<label class="ans"><span class="dot d${i}"></span><input type="radio" name="psc" value="${i}" ${i===0?"checked":""}><input type="file" accept="image/*" id="psi${i}"></label>`).join("")}</div>`;
+    } else {
+      const ata = addKind==="all_that_apply";
+      ab.innerHTML = (addKind==="picture"?`<label class="f">Picture (shown with the question)<input type="file" accept="image/*" id="aimg"></label>`:"") +
+        `<div class="muted">${ata?"Tick every right answer.":"The first (blue) answer is the right one; the game shuffles them."}</div>
+        <div class="answers">${[0,1,2,3].map(i=>`<label class="ans ${!ata&&i===0?"correct":""}"><span class="dot d${i}"></span>${ata?`<input type="checkbox" id="ar${i}">`:""}<input type="text" id="aa${i}" placeholder="${!ata&&i===0?"Right answer":"Answer"}"><span class="cnt" id="ac${i}"></span></label>`).join("")}</div>`;
+      [0,1,2,3].forEach(i=>counter($("#aa"+i),$("#ac"+i),30));
+    }
+    $("#addgo").onclick=addQuestion;
+  } else {
+    const rows = P.questions.filter(q=>qfilter==="all"||q.kind===qfilter);
+    b.innerHTML = `<div class="row">${["all",...Object.keys(KINDS)].map(k=>`<button class="chip ${qfilter===k?"on":""}" data-f="${k}">${k==="all"?"All":KINDS[k]} (${k==="all"?P.questions.length:P.counts[k]})</button>`).join("")}</div>
+      <div class="qwrap"><table class="qtable"><thead><tr><th>Type</th><th>Question</th><th>Answers</th><th></th></tr></thead><tbody>${
+      rows.length ? rows.map(q=>`<tr><td><span class="pill ${q.kind==="standard"?"ok":"low"}">${KINDS[q.kind]}</span></td><td>${q.img?`<img src="/img?id=${P.id}&name=${q.img}" alt="">`:""}${esc(q.q)}</td><td class="a">${
+        q.kind==="point_stealer" ? q.imgs.map(n=>`<img src="/img?id=${P.id}&name=${n}" alt="">`).join("") :
+        q.kind==="all_that_apply" ? q.a.map((a,i)=>`<span style="${q.right[i]?"color:var(--ok);font-weight:600":"color:var(--muted);font-weight:400"}">${esc(a)}</span>`).join("") :
+        q.a.map(a=>`<span>${esc(a)}</span>`).join("")}</td><td><button class="btn small" data-del="${q.kind}:${q.i}" aria-label="Delete">✕</button></td></tr>`).join("")
+      : `<tr><td colspan="4" class="muted">No questions yet.</td></tr>`}</tbody></table></div>`;
+    b.querySelectorAll("[data-f]").forEach(c=>c.onclick=()=>{qfilter=c.dataset.f;renderQ();});
+    b.querySelectorAll("[data-del]").forEach(d=>d.onclick=async()=>{const [k,i]=d.dataset.del.split(":"); P=await api("/api/delete",{id:P.id,kind:k,i:+i}); renderQ(); renderRoundsStatus(); head();});
+  }
+}
+function head(){ $(".head .sub").textContent = `Pack #${P.number} · ${P.questions.length} questions`; $("#qtabs [data-t=list]").textContent=`All questions (${P.questions.length})`; loadState(); }
+function counter(inp, out, max){ const u=()=>{out.textContent=`${inp.value.length}/${max}`; out.classList.toggle("over", inp.value.length>max);}; inp.oninput=u; u(); }
+async function importFiles(list){ if(!list.length) return; const files=[]; for(const f of list) files.push(await readFile(f)); doImport({files}); }
+async function doImport(body){
+  $("#impres").textContent = "Importing…";
+  const r = await api("/api/import", Object.assign({id:P.id}, body));
+  P = r.project;
+  const sk = Object.entries(r.skipped).map(([k,v])=>`${v} ${k}`).join(", ");
+  $("#impres").innerHTML = `<b>${r.added} added</b> of ${r.found} found${sk?` · skipped: ${esc(sk)}`:""}`;
+  renderRoundsStatus(); head();
+}
+async function addQuestion(){
+  const body = {id:P.id, kind:addKind, question:$("#aq").value.trim()};
+  if(addKind==="point_stealer"){
+    body.images=[]; for(let i=0;i<4;i++){ const f=$("#psi"+i).files[0]; if(!f) return toast("Add all four pictures",true); body.images.push(await readFile(f)); }
+    body.correct = +document.querySelector("input[name=psc]:checked").value;
+  } else {
+    body.answers=[0,1,2,3].map(i=>$("#aa"+i).value.trim());
+    if(addKind==="all_that_apply") body.right=[0,1,2,3].map(i=>$("#ar"+i).checked);
+    if(addKind==="picture"){ const f=$("#aimg").files[0]; if(!f) return toast("Choose a picture",true); body.image=await readFile(f); }
+  }
+  P = await api("/api/add", body); toast("Question added"); renderQ(); renderRoundsStatus(); head();
+}
+
+// ---------- rounds
+const roundNames = () => S.round_types.map(r=>r.name);
+function renderTracks(){ ["4p","8p"].forEach(pl=>renderTrack(pl)); }
+function renderTrack(pl){
+  const steps = (P["rounds"+pl]||[]).map(s=>typeof s==="string"?s:{random:[...s.random]});
+  const el = $("#track"+pl);
+  const none = new Set(P.rounds_status.filter(r=>r.state==="none").map(r=>r.name));
+  const opts = sel => roundNames().filter(n=>n!=="Final Countdown").map(n=>`<option value="${n}" ${n===sel?"selected":""}>${n}${none.has(n)?" (no questions)":""}</option>`).join("");
+  el.innerHTML = steps.map((s,i)=>`<div class="card" data-i="${i}"><div class="top"><span>Round ${i+1}${typeof s==="string"?"":" · random"}</span><span class="tools"><button data-a="left" aria-label="Move earlier">◀</button><button data-a="right" aria-label="Move later">▶</button><button data-a="del" aria-label="Remove">✕</button></span></div>${
+    typeof s==="string" ? `<select data-a="pick">${opts(s)}</select>` :
+    `<div class="chips">${roundNames().filter(n=>n!=="Final Countdown").map(n=>`<span class="chip ${s.random.includes(n)?"on":""} ${none.has(n)?"dim":""}" title="${none.has(n)?"No questions for this round yet":""}" data-a="toggle" data-n="${esc(n)}">${n}</span>`).join("")}</div>`}</div>`).join("") +
+    `<div class="card fixed"><div class="top"><span>Last round</span></div><b>Final Countdown</b></div>
+     <div class="card fixed" style="gap:6px"><button class="btn small" data-a="addr">+ Round</button><button class="btn small" data-a="addx">+ Random pick</button></div>`;
+  $("#count"+(pl==="4p"?"4":"8")).textContent = steps.length ? `${steps.length} round${steps.length>1?"s":""} + Final Countdown` : "game default (no custom order)";
+  const commit = ns => save({["rounds"+pl]:ns}).then(()=>{renderTrack(pl); renderRoundsStatus();});
+  el.querySelectorAll("[data-a]").forEach(c=>{
+    const card=c.closest("[data-i]"); const i=card?+card.dataset.i:-1; const a=c.dataset.a;
+    if(a==="pick") c.onchange=()=>{steps[i]=c.value; commit(steps);};
+    else c.onclick=()=>{
+      if(a==="del") steps.splice(i,1);
+      else if(a==="left"&&i>0) [steps[i-1],steps[i]]=[steps[i],steps[i-1]];
+      else if(a==="right"&&i<steps.length-1) [steps[i+1],steps[i]]=[steps[i],steps[i+1]];
+      else if(a==="toggle"){ const n=c.dataset.n, r=steps[i].random; const k=r.indexOf(n); if(k>=0){ if(r.length>1) r.splice(k,1); } else r.push(n); }
+      else if(a==="addr") steps.push("Point Builder");
+      else if(a==="addx") steps.push({random:["Pie Fight","Pass the Bomb"]});
+      commit(steps);
+    };
+  });
+}
+function renderRoundsStatus(){
+  const el=$("#rstatus"); if(!el) return;
+  const used = new Set([...(P.rounds4p||[]),...(P.rounds8p||[])].flatMap(s=>typeof s==="string"?[s]:s.random).concat(["Final Countdown"]));
+  const bad = P.rounds_status.filter(r=>r.state==="none" && used.has(r.name)).map(r=>r.name);
+  $("#rwarn").innerHTML = bad.length ? `<div class="warn">${bad.join(", ")} ${bad.length>1?"have":"has"} no questions in this pack yet. Add some (Point Stealer needs picture answers) or take ${bad.length>1?"them":"it"} out of the running order.</div>` : "";
+  el.innerHTML = P.rounds_status.map(r=>`<div style="${used.has(r.name)?"":"opacity:.6"}"><span>${r.name}</span><span class="pill ${r.state}">${r.state==="none"?"none":r.questions+(r.state==="low"?" (repeats)":"")}</span></div>`).join("");
+  voiceNote();
+}
+
+// ---------- generate
+async function startGenerate(){
+  const btn=$("#gobtn"); btn.disabled=true; lastResult=null;
+  $("#golog").innerHTML=`<div class="log" id="logbox">Starting…</div>`;
+  const r = await api("/api/generate",{id:P.id}).catch(()=>{btn.disabled=false;});
+  if(!r) return;
+  const poll = async()=>{
+    const j = await api("/api/job?id="+r.job);
+    $("#logbox").textContent = j.log.join("\n") || "Working…";
+    if(!j.done) return setTimeout(poll, 1000);
+    btn.disabled=false;
+    if(j.result){ lastResult=j.result; showResult(j.result); P = await api("/api/project?id="+P.id); }
+  };
+  poll();
+}
+function showResult(res){
+  const box=document.createElement("div"); box.className="result";
+  box.innerHTML = `<b>PKG ready</b><code>${esc(res.pkg)}</code>
+    <div class="muted">${esc(res.language)} · pack #${res.pack_number} · ${res.voiced} voiced lines · ${esc(res.voice)}</div>
+    <div class="muted">Install it in RPCS3 with <b>File → Install Packages/Raps/Edats</b>, or on a modded PS3 with the package installer.</div>
+    <div class="row"><button class="btn" id="openf">Open folder</button><button class="btn" id="inst">Copy straight into RPCS3</button></div>`;
+  $("#golog").appendChild(box);
+  $("#openf").onclick=()=>api("/api/open",{path:res.pkg});
+  $("#inst").onclick=async()=>{const r=await api("/api/install",{result:res}); toast("Installed: "+r.installed);};
+}
+
+// ---------- online server page
+let srvTimer = null;
+async function srvPill(){ try{ const st = await api("/api/server",{op:"status"}); const p=$("#srvpill"); p.textContent = st.running?"running":"stopped"; p.className = "pill "+(st.running?"ok":"none"); return st; }catch(e){} }
+$("#srvbtn").onclick = ()=>{ P=null; renderSide(); renderServer(); };
+async function renderServer(st){
+  st = st || await api("/api/server",{op:"status"});
+  srvPill();
+  const m=$("#main");
+  const swap = `${st.hostname}=${st.lan_ip}`;
+  m.innerHTML = `
+  <div class="head"><div><h2>Online server</h2><div class="sub">Your own Buzz! server: MyBuzz online quizzes, leaderboards and buddies for you and your friends</div></div></div>
+  <section class="step"><header><h3>Server</h3><span class="hint"><span class="pill ${st.running?"ok":"none"}">${st.running?"Running":"Stopped"}</span></span></header>
+    ${st.configured ? "" : `<div class="warn">One-time setup: the server needs a value from your own copy of the game. In RPCS3 use <b>Utilities → Decrypt PS3 Binaries</b> on the game's EBOOT.BIN, then give the .elf here.</div>
+      <label class="f">Decrypted EBOOT (.elf)<div class="row"><input type="text" id="eboot" placeholder="…\\EBOOT.elf" style="flex:1"><button class="btn primary" id="setupbtn">Set up server</button></div></label>`}
+    <div class="row">${st.running ? `<button class="btn" id="stopbtn" ${st.managed?"":"disabled title='Started outside the Studio'"}>Stop server</button>` : `<button class="btn primary" id="startbtn" ${st.configured?"":"disabled"}>Start server</button>`}
+      <span class="muted">Ports ${Object.entries(st.ports).map(([p,u])=>`${p} ${u?"✓":"✗"}`).join(" · ")}</span></div>
+    <div class="log">${esc((st.log||[]).join("\n")) || "No server log yet."}</div>
+  </section>
+  <section class="step"><header><h3>Play with friends</h3><span class="hint">Each player sets this in RPCS3</span></header>
+    <div>Friends on your network put this in RPCS3 → <b>Configuration → Network → IP swap list</b> (you use <code>${st.hostname}=127.0.0.1</code>):</div>
+    <div class="row"><code style="font-size:1rem;padding:6px 10px;background:var(--soft);border-radius:8px">${esc(swap)}</code><button class="btn small" id="copyswap">Copy</button></div>
+    <div class="muted">Over the internet: forward TCP ports 10060, 10071 and 10075 on your router to this PC and give friends your public IP instead. Everyone needs a free RPCN account (RPCS3 → Configuration → RPCN).</div>
+    <div class="grid" style="align-items:end">
+      <label class="f">This PC plays on the server at<input type="text" id="srvip" value="127.0.0.1"></label>
+      <label class="switch"><input type="checkbox" id="fps60" checked> 60 FPS patch</label>
+      <button class="btn primary" id="setuppc">Set up this PC for online play</button>
+    </div>
+    <div class="muted" style="font-size:.85rem">Applies the login fix to your game's scripts, enables the RPCS3 patch the server needs, and sets RPCS3's network options (Internet on, PSN = RPCN, IP swap). Every changed file is backed up first.</div>
+    <div id="setupres"></div>
+  </section>
+  <section class="step"><header><h3>Online quizzes</h3><span class="hint">What your server offers in MyBuzz</span></header>
+    <div class="qwrap"><table class="qtable"><thead><tr><th>Pack</th><th>Quizzes</th><th>From</th><th>On</th></tr></thead><tbody>${
+      (st.published||[]).map(p=>`<tr><td>${esc(p.pack)}</td><td>${p.quizzes}</td><td class="muted">${p.project?"Studio: "+esc(p.project):"catalogue file "+esc(p.file)}</td><td><input type="checkbox" data-file="${esc(p.file)}" ${p.enabled?"checked":""} aria-label="Offer ${esc(p.pack)} online"></td></tr>`).join("") || `<tr><td colspan="4" class="muted">Nothing published yet: use "Publish to MyBuzz" on a pack.</td></tr>`}</tbody></table></div>
+  </section>`;
+  const b=(id,fn)=>{const e=$("#"+id); if(e) e.onclick=fn;};
+  b("startbtn", async()=>{ renderServer(await api("/api/server",{op:"start"})); setTimeout(()=>renderServer(),2500); });
+  b("stopbtn", async()=>renderServer(await api("/api/server",{op:"stop"})));
+  b("setupbtn", async()=>{ renderServer(await api("/api/server",{op:"setup",eboot:$("#eboot").value.trim()})); toast("Server set up"); });
+  b("copyswap", ()=>{ navigator.clipboard.writeText(swap); toast("Copied"); });
+  b("setuppc", async()=>{ const r=await api("/api/setup_pc",{server_ip:$("#srvip").value.trim(),fps60:$("#fps60").checked}); $("#setupres").innerHTML=`<div class="result"><b>Done</b>${r.done.map(x=>`<div>✓ ${esc(x)}</div>`).join("")}<div class="muted">Restart the game in RPCS3 for this to take effect.</div></div>`; });
+  m.querySelectorAll("[data-file]").forEach(c=>c.onchange=()=>api("/api/catalog",{file:c.dataset.file,enabled:c.checked}));
+  clearTimeout(srvTimer); srvTimer=setTimeout(()=>{ if(!P && $("#main h2")?.textContent==="Online server") renderServer(); }, 5000);
+}
+
+loadState().then(()=>{ srvPill(); const u=new URLSearchParams(location.search); const q=u.get("p"); if(q) openProject(q); else if(u.get("page")==="server") renderServer(); });
+</script>
+</body>
+</html>

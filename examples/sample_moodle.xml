@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+  <question type="multichoice">
+    <name><text>q1</text></name>
+    <questiontext format="html"><text><![CDATA[<p>Which ocean is the largest?</p>]]></text></questiontext>
+    <answer fraction="100"><text>Pacific</text></answer>
+    <answer fraction="0"><text>Atlantic</text></answer>
+    <answer fraction="0"><text>Indian</text></answer>
+    <answer fraction="0"><text>Arctic</text></answer>
+  </question>
+  <question type="multichoice">
+    <questiontext format="html"><text>Which of these are primary colours?</text></questiontext>
+    <answer fraction="50"><text>Red</text></answer>
+    <answer fraction="50"><text>Blue</text></answer>
+    <answer fraction="0"><text>Green</text></answer>
+    <answer fraction="0"><text>Purple</text></answer>
+  </question>
+</quiz>

@@ -1,0 +1,49 @@
+{
+ "pack": "Buzz Starter Pack",
+ "category": "General Knowledge",
+ "author": "Buzz",
+ "description": "A mixed warm-up across trivia, science and music",
+ "tags": ["starter"],
+ "enabled": true,
+ "quizzes": [
+  {
+   "name": "General Knowledge",
+   "description": "Capitals, shapes and history",
+   "category": "Trivia",
+   "tags": ["general knowledge", "geography", "history"],
+   "questions": [
+    {"question": {"text": "What is the capital city of Australia?"}, "correctAnswer": "Canberra", "incorrectAnswers": ["Sydney", "Melbourne", "Perth"], "difficulty": "easy"},
+    {"question": {"text": "How many sides does a hexagon have?"}, "correctAnswer": "6", "incorrectAnswers": ["5", "7", "8"], "difficulty": "easy"},
+    {"question": {"text": "Which planet is known as the Red Planet?"}, "correctAnswer": "Mars", "incorrectAnswers": ["Venus", "Jupiter", "Mercury"], "difficulty": "easy"},
+    {"question": {"text": "In which year did the Berlin Wall fall?"}, "correctAnswer": "1989", "incorrectAnswers": ["1987", "1991", "1985"], "difficulty": "medium"},
+    {"question": {"text": "What is the largest ocean on Earth?"}, "correctAnswer": "Pacific Ocean", "incorrectAnswers": ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean"], "difficulty": "easy"}
+   ]
+  },
+  {
+   "name": "Science & Nature",
+   "description": "Elements, biology and physics",
+   "category": "Science",
+   "tags": ["science", "nature"],
+   "questions": [
+    {"question": {"text": "What is the chemical symbol for gold?"}, "correctAnswer": "Au", "incorrectAnswers": ["Ag", "Gd", "Go"], "difficulty": "easy"},
+    {"question": {"text": "Which gas do plants absorb from the air for photosynthesis?"}, "correctAnswer": "Carbon dioxide", "incorrectAnswers": ["Oxygen", "Nitrogen", "Hydrogen"], "difficulty": "easy"},
+    {"question": {"text": "How many bones are in the adult human body?"}, "correctAnswer": "206", "incorrectAnswers": ["186", "212", "250"], "difficulty": "medium"},
+    {"question": {"text": "What is the hardest natural substance?"}, "correctAnswer": "Diamond", "incorrectAnswers": ["Quartz", "Granite", "Topaz"], "difficulty": "easy"},
+    {"question": {"text": "Roughly how fast does light travel in a vacuum?"}, "correctAnswer": "300,000 km per second", "incorrectAnswers": ["150,000 km per second", "30,000 km per second", "3,000,000 km per second"], "difficulty": "medium"}
+   ]
+  },
+  {
+   "name": "Music Legends",
+   "description": "Bands, composers and pop icons",
+   "category": "Music",
+   "tags": ["music"],
+   "questions": [
+    {"question": {"text": "Which band released the album Abbey Road?"}, "correctAnswer": "The Beatles", "incorrectAnswers": ["The Rolling Stones", "Queen", "Pink Floyd"], "difficulty": "easy"},
+    {"question": {"text": "How many keys does a standard piano have?"}, "correctAnswer": "88", "incorrectAnswers": ["76", "92", "100"], "difficulty": "medium"},
+    {"question": {"text": "Who composed the Moonlight Sonata?"}, "correctAnswer": "Ludwig van Beethoven", "incorrectAnswers": ["Wolfgang Amadeus Mozart", "Johann Sebastian Bach", "Frederic Chopin"], "difficulty": "medium"},
+    {"question": {"text": "Which singer is known as the Queen of Pop?"}, "correctAnswer": "Madonna", "incorrectAnswers": ["Kylie Minogue", "Britney Spears", "Whitney Houston"], "difficulty": "easy"},
+    {"question": {"text": "Freddie Mercury was the lead singer of which band?"}, "correctAnswer": "Queen", "incorrectAnswers": ["Genesis", "Deep Purple", "The Who"], "difficulty": "easy"}
+   ]
+  }
+ ]
+}
