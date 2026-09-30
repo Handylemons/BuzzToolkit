@@ -206,8 +206,10 @@ matches against remote players are not supported yet (see the roadmap).
 
 ## Licence
 
-Buzz Toolkit is released under the [MIT licence](LICENSE). Third-party parts keep their own
-licences; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Buzz Toolkit is released under the [MIT licence](LICENSE). The licence covers the toolkit's own code
+and documentation only; it grants no rights to Buzz! Quiz World or any other game content, which
+belongs to its owners and is not included. Third-party parts keep their own licences; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Disclaimer
 
