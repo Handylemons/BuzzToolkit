@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buzz Toolkit – make custom quiz packs for Buzz! Quiz World (PS3 / RPCS3)</title>
+<meta name="description" content="Buzz Toolkit is a free, open-source fan tool for Buzz! Quiz World on PS3 and the RPCS3 emulator: make your own quiz packs (custom DLC) with pictures and host voice-over, and host your own MyBuzz online server.">
+<meta name="keywords" content="Buzz Toolkit, Buzz! Quiz World, Buzz quiz, custom quiz pack, custom DLC, RPCS3, PS3, MyBuzz server, quiz maker">
+<link rel="canonical" href="https://handylemons.github.io/BuzzToolkit/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Buzz Toolkit – custom quiz packs for Buzz! Quiz World">
+<meta property="og:description" content="Make your own Buzz! Quiz World quiz packs and host your own MyBuzz server. Free fan tool for PS3 / RPCS3.">
+<meta property="og:url" content="https://handylemons.github.io/BuzzToolkit/">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Buzz Toolkit",
+  "alternateName": "BuzzToolkit",
+  "description": "Free fan tool for Buzz! Quiz World (PS3 / RPCS3): make custom quiz packs with pictures and host voice-over, and host your own MyBuzz online server.",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Windows 10, Windows 11",
+  "license": "https://opensource.org/licenses/MIT",
+  "url": "https://handylemons.github.io/BuzzToolkit/",
+  "downloadUrl": "https://github.com/Handylemons/BuzzToolkit/releases/latest",
+  "codeRepository": "https://github.com/Handylemons/BuzzToolkit",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+  /* One deliberate visual world (a quiz-show stage at night), so a single dark theme is used and
+     every colour is set explicitly. The four answer colours are the Buzz! buzzer's own. */
+  :root {
+    --stage: #0d1030;
+    --stage-2: #151a45;
+    --ink: #eef0ff;
+    --ink-dim: #b7bce6;
+    --rule: #2a3170;
+    --red: #e8412f;
+    --blue: #3b7bf0;
+    --orange: #f4902a;
+    --green: #3fb065;
+    --yellow: #f5c83a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--stage); color: var(--ink);
+    font: 17px/1.6 "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    padding-inline: 16px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  a { color: var(--yellow); }
+  a:focus-visible, .btn:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+  h1, h2, h3 { font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; line-height: 1.1; text-wrap: balance; margin: 0; }
+  header { padding-block: 56px 40px; display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center; }
+  .eyebrow { font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-dim); margin: 0 0 12px; }
+  h1 { font-size: clamp(2.3rem, 6vw, 4rem); font-weight: 800; }
+  h1 .for { display: block; font-size: .42em; font-weight: 600; color: var(--ink-dim); margin-top: 10px; }
+  .lede { max-width: 58ch; color: var(--ink); margin: 20px 0 28px; font-size: 1.1rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-block; padding: 12px 22px; border-radius: 999px; font-weight: 700; text-decoration: none; }
+  .btn.go { background: var(--red); color: #fff; box-shadow: 0 6px 0 #9c2417; }
+  .btn.go:hover { transform: translateY(2px); box-shadow: 0 4px 0 #9c2417; }
+  .btn.line { border: 2px solid var(--rule); color: var(--ink); }
+  .btn.line:hover { border-color: var(--ink-dim); }
+  /* the buzzer: one red dome over four answer colours */
+  .buzzer { width: 150px; }
+  .buzzer .dome { width: 130px; height: 130px; margin: 0 auto -18px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff8a78, var(--red) 55%, #8d1f12); position: relative; z-index: 1; }
+  .buzzer ul { list-style: none; margin: 0; padding: 26px 18px 16px; background: #22285e; border-radius: 26px; display: grid; gap: 7px; }
+  .buzzer li { height: 14px; border-radius: 7px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .btn.go { transition: transform .08s, box-shadow .08s; }
+  }
+  section { padding-block: 44px; border-top: 1px solid var(--rule); }
+  h2 { font-size: 1.9rem; font-weight: 800; margin-bottom: 22px; }
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .three article { background: var(--stage-2); border-radius: 14px; padding: 20px; border-top: 6px solid var(--c); }
+  .three h3 { font-size: 1.25rem; margin-bottom: 8px; }
+  .three p { margin: 0; color: var(--ink-dim); }
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; display: grid; gap: 14px; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: start; }
+  ol.steps li::before { content: counter(s); width: 44px; height: 44px; border-radius: 50%; background: var(--stage-2);
+    border: 2px solid var(--rule); display: grid; place-items: center; font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; }
+  ol.steps b { display: block; }
+  ol.steps span { color: var(--ink-dim); }
+  ul.ticks { columns: 2; column-gap: 36px; padding-left: 20px; margin: 0; }
+  ul.ticks li { break-inside: avoid; margin-bottom: 8px; }
+  dl { margin: 0; display: grid; gap: 18px; }
+  dt { font-weight: 700; }
+  dd { margin: 4px 0 0; color: var(--ink-dim); max-width: 70ch; }
+  footer { border-top: 1px solid var(--rule); padding-block: 28px 48px; color: var(--ink-dim); font-size: .9rem; }
+  footer p { max-width: 75ch; }
+  @media (max-width: 760px) {
+    header { grid-template-columns: 1fr; padding-top: 36px; }
+    .buzzer { display: none; }
+    .three { grid-template-columns: 1fr; }
+    ul.ticks { columns: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">Free fan tool · Windows · MIT licence</p>
+      <h1>Buzz Toolkit <span class="for">Make your own quiz packs for Buzz! Quiz World</span></h1>
+      <p class="lede">Write your questions, add pictures, choose the rounds and press Generate: you get a
+        package that installs in RPCS3 (the PS3 emulator) like real downloadable content, with the quiz
+        host reading your questions. Host your own MyBuzz server for online quizzes too.</p>
+      <div class="actions">
+        <a class="btn go" href="https://github.com/Handylemons/BuzzToolkit/releases/latest">Download the latest release</a>
+        <a class="btn line" href="https://github.com/Handylemons/BuzzToolkit">View on GitHub</a>
+      </div>
+    </div>
+    <div class="buzzer" aria-hidden="true">
+      <div class="dome"></div>
+      <ul><li style="background:var(--blue)"></li><li style="background:var(--orange)"></li><li style="background:var(--green)"></li><li style="background:var(--yellow)"></li></ul>
+    </div>
+  </header>
+
+  <section aria-labelledby="what">
+    <h2 id="what">What it does</h2>
+    <div class="three">
+      <article style="--c:var(--blue)"><h3>Quiz pack generator</h3>
+        <p>Make custom quiz packs: standard, picture, All That Apply and Point Stealer questions, your own
+          running order of rounds, any language code. Out comes an installable .pkg.</p></article>
+      <article style="--c:var(--orange)"><h3>Host voice-over</h3>
+        <p>Optionally, the quiz host reads every question, in a voice trained from your own copy of the game.
+          Each line is checked with speech recognition.</p></article>
+      <article style="--c:var(--green)"><h3>Your own MyBuzz server</h3>
+        <p>A self-hosted replacement for the long-closed official servers: online quizzes, leaderboards and
+          buddies for you and your friends.</p></article>
+    </div>
+  </section>
+
+  <section aria-labelledby="how">
+    <h2 id="how">How it works</h2>
+    <ol class="steps">
+      <li><div><b>Install</b><span>Unzip the toolkit and double-click Install.bat (Python 3.11 needed).</span></div></li>
+      <li><div><b>Set up from your own game</b><span>Point it at your RPCS3 folder and your own decrypted game file. Nothing from the game is included in the toolkit.</span></div></li>
+      <li><div><b>Make a pack</b><span>Import questions from files or free trivia databases, or write your own, in Buzz Pack Studio in your browser.</span></div></li>
+      <li><div><b>Generate and play</b><span>Press Generate, install the package in RPCS3, and play it from the Pack Game menu.</span></div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="features">
+    <h2 id="features">Features</h2>
+    <ul class="ticks">
+      <li>Questions from CSV, text, Moodle XML, JSON and more</li>
+      <li>Open Trivia DB and other free question sources</li>
+      <li>Picture questions from your own images</li>
+      <li>Per-pack running orders for the Pack Game menu</li>
+      <li>Checks the game's text limits for you</li>
+      <li>Pack-number protection, so packs never overwrite each other</li>
+      <li>Downloads the official game update from Sony for you</li>
+      <li>Works offline; the server is optional</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="faq">
+    <h2 id="faq">Questions</h2>
+    <dl>
+      <dt>Does it include the game or any game files?</dt>
+      <dd>No. You need your own copy of Buzz! Quiz World (BCES00645). The toolkit reads what it needs from your copy, on your machine.</dd>
+      <dt>Does it work on a real PS3?</dt>
+      <dd>Packs are confirmed working on RPCS3. Real consoles are untested so far.</dd>
+      <dt>What does it cost?</dt>
+      <dd>Nothing. It's free and open source under the MIT licence.</dd>
+    </dl>
+  </section>
+
+  <footer>
+    <p>Buzz Toolkit is an unofficial, non-commercial fan project. It is not affiliated with, endorsed or
+      approved by Sony Interactive Entertainment, Relentless Software or any other rights holder. "Buzz!",
+      "PlayStation" and "PS3" are trademarks of their respective owners. Provided as is, without warranty;
+      use at your own risk.</p>
+    <p><a href="https://github.com/Handylemons/BuzzToolkit">github.com/Handylemons/BuzzToolkit</a></p>
+  </footer>
+</div>
+</body>
+</html>
