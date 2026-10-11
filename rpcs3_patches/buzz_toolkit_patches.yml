@@ -32,6 +32,27 @@ PPU-35a27ffa1242df7b535018a03b360b3e351a1584:
       - [ be32, 0x0022eab4, 0x38600001 ]
 
 PPU-b1aeb0b537a96a86b5d2f7aeb4e6ac60ba117881:
+  "Online: logged in when connected to the server":
+    Games:
+      "Buzz! Quiz World":
+        BCES00644: [ 01.00, 01.01 ]
+        BCES00645: [ 01.00 ]
+        BCES00647: [ 01.00, 01.01 ]
+    Author: "Buzz Toolkit"
+    Notes: "Network.IsLoggedIn (0x1d9a90 on the disc build) -> true only when the server has sent its URI list. The network object is at TOC+0x2d48 here, not +0x3080 as on v01.02; that offset was read back from four separate code sites that reference the same global, each located independently."
+    Patch Version: "1.1"
+    Patch:
+      - [ be32, 0x001d9a90, 0x81222d48 ]
+      - [ be32, 0x001d9a94, 0x81290018 ]
+      - [ be32, 0x001d9a98, 0x2f890000 ]
+      - [ be32, 0x001d9a9c, 0x38600000 ]
+      - [ be32, 0x001d9aa0, 0x4d9e0020 ]
+      - [ be32, 0x001d9aa4, 0x80090004 ]
+      - [ be32, 0x001d9aa8, 0x2f800000 ]
+      - [ be32, 0x001d9aac, 0x4d9e0020 ]
+      - [ be32, 0x001d9ab0, 0x38600001 ]
+      - [ be32, 0x001d9ab4, 0x4e800020 ]
+
   "60 FPS (frame interval 1)":
     Games:
       "Buzz! Quiz World":

@@ -229,11 +229,35 @@ RPCS3_PATCHES = {
 ''',
 }
 
-# Patches for the v01.00 disc build. The login patch is NOT here: its first instruction is a
-# TOC-relative load (lwz r9,0x3080(r2)) whose offset belongs to v01.02's TOC, and reusing it
-# against a different TOC would read an unrelated global - so it stays v01.02-only until that
-# slot is resolved properly.
+# Patches for the v01.00 disc build. The login patch needed its TOC slot resolving first: its
+# first instruction loads the network object through the table of contents, and the disc build
+# lays that table out differently (TOC+0x2d48, not +0x3080). The offset was recovered by finding
+# the four code sites that load the same global on v01.02, porting each independently with the
+# 16-bit offset masked out of the match, and reading back the offset they use - all four agree.
+# Confirmed in game on BCES00647: the MyBuzz menus open against a running server.
 RPCS3_PATCHES_V100 = {
+    LOGIN_PATCH: '''
+  "Online: logged in when connected to the server":
+    Games:
+      "Buzz! Quiz World":
+        BCES00644: [ 01.00, 01.01 ]
+        BCES00645: [ 01.00 ]
+        BCES00647: [ 01.00, 01.01 ]
+    Author: "Buzz Toolkit"
+    Notes: "Network.IsLoggedIn (0x1d9a90 on the disc build) -> true only when the server has sent its URI list. The network object is at TOC+0x2d48 here, not +0x3080 as on v01.02; that offset was read back from four separate code sites that reference the same global, each located independently."
+    Patch Version: "1.1"
+    Patch:
+      - [ be32, 0x001d9a90, 0x81222d48 ]
+      - [ be32, 0x001d9a94, 0x81290018 ]
+      - [ be32, 0x001d9a98, 0x2f890000 ]
+      - [ be32, 0x001d9a9c, 0x38600000 ]
+      - [ be32, 0x001d9aa0, 0x4d9e0020 ]
+      - [ be32, 0x001d9aa4, 0x80090004 ]
+      - [ be32, 0x001d9aa8, 0x2f800000 ]
+      - [ be32, 0x001d9aac, 0x4d9e0020 ]
+      - [ be32, 0x001d9ab0, 0x38600001 ]
+      - [ be32, 0x001d9ab4, 0x4e800020 ]
+''',
     FPS_PATCH: '''
   "60 FPS (frame interval 1)":
     Games:

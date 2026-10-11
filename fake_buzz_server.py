@@ -1005,7 +1005,22 @@ class MediusSession:
         if msg_class == MESSAGECLASS_LOBBY and msg_id == GET_UNIVERSE_INFORMATION:
             self._handle_get_universe_information(body)
         else:
+            # An unimplemented message is the most valuable thing in this log - it is the next
+            # step of the sequence the client wants. Dump it fully, and guess at the shape:
+            # Medius app bodies start MessageID (char[21] or u32) then a status/field block, so
+            # printable runs and 32-bit words both help identify it against a reference model.
             self.log(f"unhandled app message class=0x{msg_class:02x} id=0x{msg_id:02x}, {len(body)} bytes")
+            for off in range(0, min(len(body), 160), 16):
+                chunk = body[off:off + 16]
+                txt = "".join(chr(c) if 32 <= c < 127 else "." for c in chunk)
+                self.log("    %04x  %-47s  %s" % (off, " ".join("%02x" % c for c in chunk), txt))
+            words = [int.from_bytes(body[i:i + 4], "big") for i in range(0, min(len(body), 32), 4)]
+            self.log("    be32: %s" % " ".join("%08x" % w for w in words))
+            words_le = [int.from_bytes(body[i:i + 4], "little") for i in range(0, min(len(body), 32), 4)]
+            self.log("    le32: %s" % " ".join("%08x" % w for w in words_le))
+            runs = re.findall(rb"[ -~]{4,}", body)
+            if runs:
+                self.log("    strings: %s" % ", ".join(repr(r.decode()) for r in runs[:6]))
 
     def _handle_get_universe_information(self, body):
         message_id = body[0:21].decode("ascii", errors="replace").rstrip("\x00")

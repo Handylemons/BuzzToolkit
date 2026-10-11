@@ -19,25 +19,101 @@ MAX_Q, MAX_A = 93, 30          # longest question / answer the pack builder acce
 DIFFICULTY = {"easy": 1, "medium": 2, "hard": 3, "1": 1, "2": 2, "3": 3}
 CATEGORIES = ["Knowledge", "TVCinema", "Lifestyle", "Music"]     # menu channels a pack sits in
 
+# What each build's font is expected to draw, by pack language. Used only to WARN (see
+# `unsupported`) - nothing is ever stripped on the strength of this, because the font on the
+# disc is the real authority and these sets are our best reading of it. ASCII is implicit.
+#   BCES00644/645 (Latin): Latin-1 accents
+#   BCES00647: Polish, Czech, Croatian (Latin-2), Russian (Cyrillic), Greek
+_LATIN1 = "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ¡¿ªº«»"
+_POLISH = "ĄĆĘŁŃÓŚŹŻąćęłńóśźż"
+_CZECH = "ÁČĎÉĚÍŇÓŘŠŤÚŮÝŽáčďéěíňóřšťúůýž"
+_CROAT = "ČĆĐŠŽčćđšž"
+_CYRILLIC = "".join(chr(c) for c in range(0x0410, 0x0450)) + "ЁёЇїІіЄєҐґ"
+_GREEK = "".join(chr(c) for c in range(0x0386, 0x03CF))
+CHARSETS = {
+    "GBR": _LATIN1, "ESP": _LATIN1, "PRT": _LATIN1, "FRA": _LATIN1,
+    "DEU": _LATIN1, "ITA": _LATIN1, "NLD": _LATIN1,
+    "POL": _LATIN1 + _POLISH, "CZE": _LATIN1 + _CZECH, "CRO": _LATIN1 + _CROAT,
+    "RUS": _CYRILLIC, "GRC": _GREEK,
+}
+
+END_OF_STRING = 0xFEFE          # buzz_text's end-of-string symbol; cannot occur inside a string
+# Unicode general categories that cannot be stored or drawn, so they are the only ones dropped.
+_DROP_CATEGORIES = {"Cc", "Cf", "Cs", "Co", "Cn"}
+
 _PUNCT = {"‘": "'", "’": "'", "‚": "'", "‛": "'", "′": "'", "´": "'",
           "“": '"', "”": '"', "„": '"', "″": '"', "–": "-", "—": "-",
           "−": "-", "…": "...", " ": " ", " ": " ", "​": ""}
 
 
 def clean(s, uppercase=False):
-    """HTML entities, typographic punctuation and exotic characters -> what the game's font has
-    (Latin-1). Accented Latin letters are kept; anything else is transliterated or dropped."""
+    """Tidy text for the pack without losing letters.
+
+    The game's string tables store each character as a 16-bit code point, so every script the
+    toolkit targets - Latin with accents, Polish and Czech and Croatian diacritics, Cyrillic and
+    Greek - goes through intact. This used to keep only code points below 256 and strip the rest
+    to bare ASCII, which silently turned LEZY into LEZY, dropped Cyrillic and Greek entirely, and
+    made accented answers wrong rather than merely plain.
+
+    What is still normalised: HTML entities, typographic punctuation that has a plain equivalent
+    (see _PUNCT), and runs of whitespace. What is removed: only characters that cannot be
+    rendered or stored - control and formatting codes, unpaired surrogates, private-use and
+    unassigned code points, and anything above the basic plane (0xFFFF), since the table's
+    character field is 16-bit. 0xFEFE is the table's end-of-string marker and cannot appear in
+    a string.
+    """
     s = html.unescape(str(s or ""))
     s = "".join(_PUNCT.get(c, c) for c in s)
     out = []
     for c in s:
-        if ord(c) < 256:
-            out.append(c)
+        o = ord(c)
+        if c.isspace():
+            # newline and tab are control characters, but they are word separators, not noise -
+            # turn them into spaces here so the collapse below keeps the words apart
+            out.append(" ")
+        elif o > 0xFFFF or o == END_OF_STRING:
+            # outside the 16-bit table (astral: emoji, rare CJK) - fall back to an ASCII
+            # approximation if one exists, otherwise drop it
+            out.append("".join(x for x in unicodedata.normalize("NFKD", c) if ord(x) < 128))
+        elif unicodedata.category(c) in _DROP_CATEGORIES:
+            continue                       # control/format/surrogate/private-use/unassigned
         else:
-            d = unicodedata.normalize("NFKD", c)
-            out.append("".join(x for x in d if ord(x) < 128))
+            out.append(c)
     s = re.sub(r"\s+", " ", "".join(out)).strip()
-    return s.upper() if uppercase else s
+    return upper(s) if uppercase else s
+
+
+def upper(s):
+    """Uppercase the way each script actually does it.
+
+    Python's str.upper() is right for Latin and Cyrillic (and correctly gives German SS for ss),
+    but wrong for Greek: modern Greek drops the accent in all-caps, so POLI becomes a word with
+    no tonos. Keeping it would also ask the font for accented capitals it may not carry.
+    """
+    s = s.upper()
+    if any("Ͱ" <= c <= "Ͽ" for c in s):
+        # strip the tonos/dialytika from Greek capitals, leaving the bare letter
+        out = []
+        for c in s:
+            d = unicodedata.normalize("NFD", c)
+            base = "".join(x for x in d if not unicodedata.combining(x))
+            out.append(base if "Ͱ" <= base[:1] <= "Ͽ" else c)
+        s = "".join(out)
+    return s
+
+
+def unsupported(s, lang=None):
+    """-> sorted list of characters in `s` that `lang`'s game build probably cannot draw.
+
+    Advisory only: it reports, it never edits. A pack still builds with them, because the font
+    is the real authority and we only know roughly what each build ships.
+    """
+    allowed = CHARSETS.get((lang or "").upper())
+    if not allowed:
+        return []
+    bad = {c for c in s if not c.isspace() and c not in allowed
+           and not (" " <= c <= "~")}
+    return sorted(bad)
 
 
 def key(q):

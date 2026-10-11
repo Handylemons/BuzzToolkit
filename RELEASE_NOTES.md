@@ -1,3 +1,41 @@
+# Buzz Toolkit 0.1.4
+
+**Accents and non-Latin alphabets are no longer stripped out of packs.**
+
+## Full character set support
+* Questions and answers now keep every letter they were written with. Previously anything above
+  Latin-1 was reduced to bare ASCII, so Polish `WISŁĄ` became `WISLA`, Czech `MĚSTO` became
+  `MESTO`, and **Russian and Greek questions were emptied of text entirely**. Accented Latin was
+  kept, but the moment a pack used a language outside Western Europe it was quietly mangled.
+* The game stores one 16-bit character per letter in its string tables, so every script the
+  toolkit targets already fitted - Latin with accents, Polish, Czech and Croatian diacritics,
+  Cyrillic and Greek. Nothing in the game needed changing; the toolkit was discarding the
+  characters before they ever reached it.
+* Still tidied, because these have a plain equivalent the font reliably has: HTML entities,
+  curly quotes, en and em dashes, ellipses, and runs of whitespace. Still removed, because they
+  cannot be stored or drawn: control and formatting codes, unassigned and private-use code
+  points, and emoji (which fall outside the 16-bit table).
+* **Greek is uppercased the way Greek actually works** - `πόλη` becomes `ΠΟΛΗ`, not `ΠΌΛΗ`,
+  since modern Greek drops the accent in all-caps. German `ß` still becomes `SS`.
+* A pack can now be checked against what its game build is expected to draw, and the toolkit
+  warns rather than silently deleting - the font on your disc is the authority, not us.
+* `test_charset.py` covers all of this so it cannot regress unnoticed.
+
+## Online on all three discs
+* **The online login patch now works on the disc build too**, so online play no longer needs
+  `BCES00645` with Sony's 01.02 update - `BCES00644` and `BCES00647` work straight from disc.
+  Confirmed in game: the MyBuzz menus open against a running server on `BCES00647`.
+* Finding it meant resolving where the disc build keeps the network object. The patch reads it
+  through the table of contents, and that table is laid out differently between the two builds
+  (`TOC+0x2d48` rather than `+0x3080`). The offset was recovered by locating the four code sites
+  that load the same object on the updated build, porting each one independently, and reading
+  back the offset they use - all four agree.
+
+## Known limits
+* The host's spoken links around a question are still written in English regardless of the pack
+  language.
+* Matchmaking and online multiplayer remain unavailable; only the MyBuzz quiz menus work.
+
 # Buzz Toolkit 0.1.3
 
 **60 FPS now works on all three European discs, not only the updated one.**
