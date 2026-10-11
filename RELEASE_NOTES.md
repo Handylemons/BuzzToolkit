@@ -1,3 +1,30 @@
+# Buzz Toolkit 0.1.3
+
+**60 FPS now works on all three European discs, not only the updated one.**
+
+* All three Quiz World discs - `BCES00644` (En, Fr, De, It, Nl), `BCES00645` (En, Es, Pt) and
+  `BCES00647` (Pl, Ru, El, Hr, Cs) - ship a byte-identical executable before Sony's 01.02 update
+  is applied. The 60 FPS patch is now also provided for that disc build, so it applies to any of
+  the three straight from disc. Previously it only worked on `BCES00645` with the update
+  installed.
+* The addresses for the disc build were found by matching each patch site's surrounding code
+  against the updated build, then checking that the instruction at the new address is the one the
+  patch expects - not by assuming a fixed offset, which does not hold between the two builds.
+
+## Still update-only
+* **The online login patch remains `BCES00645` version 01.02 only.** Its first instruction reads
+  a global through the table of contents, and that table is laid out differently in the disc
+  build, so reusing the patch there would read an unrelated value. It needs that one slot
+  resolving before it can be offered for the other discs; until then, online play needs 645 with
+  the 01.02 update.
+
+## Reminder of what 0.1.2 added
+* Packs for all three discs, with twelve pack languages: English, Spanish, Portuguese, French,
+  German, Italian, Dutch, Russian, Polish, Czech, Croatian and Greek.
+* *Copy straight into RPCS3* creates the DLC folder and its `PARAM.SFO` when missing.
+* The self-hosted server identifies which Buzz game is connecting and routes it to that title's
+  online application. Quiz TV and Ultimate Music Quiz are still not supported online.
+
 # Buzz Toolkit 0.1.2
 
 **Packs now work on all three European Buzz! Quiz World discs, not just one.**

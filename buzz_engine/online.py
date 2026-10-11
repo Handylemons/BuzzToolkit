@@ -229,6 +229,27 @@ RPCS3_PATCHES = {
 ''',
 }
 
+# Patches for the v01.00 disc build. The login patch is NOT here: its first instruction is a
+# TOC-relative load (lwz r9,0x3080(r2)) whose offset belongs to v01.02's TOC, and reusing it
+# against a different TOC would read an unrelated global - so it stays v01.02-only until that
+# slot is resolved properly.
+RPCS3_PATCHES_V100 = {
+    FPS_PATCH: '''
+  "60 FPS (frame interval 1)":
+    Games:
+      "Buzz! Quiz World":
+        BCES00644: [ 01.00, 01.01 ]
+        BCES00645: [ 01.00 ]
+        BCES00647: [ 01.00, 01.01 ]
+    Author: "Buzz Toolkit"
+    Notes: "Frame interval 2 -> 1 on the disc build (display init li r0,2 @0x26a644; SetVsyncTo30 li r3,2 @0x22adac)."
+    Patch Version: "1.0"
+    Patch:
+      - [ be32, 0x0026a644, 0x38000001 ]
+      - [ be32, 0x0022adac, 0x38600001 ]
+''',
+}
+
 
 def _drop_patch(txt, name):
     """Remove one patch definition ('  "name":' up to the next top-level patch) from patch yml text."""
@@ -237,12 +258,17 @@ def _drop_patch(txt, name):
 
 
 PPU_HASH = "PPU-35a27ffa1242df7b535018a03b360b3e351a1584"      # RPCS3's id for the v01.02 EBOOT
+# The disc build, v01.00. BCES00644, BCES00645 and BCES00647 ship a byte-identical EBOOT
+# (md5 c0e65caf596b353e883c3149aed0d440), so one hash covers every European disc before the
+# 01.02 update is applied. Addresses differ from v01.02 and were located by matching each
+# site's surrounding code, then checked against the instruction the v01.02 patch expects.
+PPU_HASH_V100 = "PPU-b1aeb0b537a96a86b5d2f7aeb4e6ac60ba117881"
 
 
-def _add_under_hash(txt, block):
+def _add_under_hash(txt, block, ppu_hash=None):
     """Put a patch block (2-space indented) inside the game's PPU-hash section of an RPCS3 patch
     file (imported_patch.yml or patch_config.yml), creating the section if it isn't there."""
-    header = PPU_HASH + ":"
+    header = (ppu_hash or PPU_HASH) + ":"
     body = block.strip("\n").split("\n")
     lines = txt.rstrip("\n").split("\n") if txt.strip() else []
     if header not in lines:
@@ -298,6 +324,9 @@ def install_rpcs3_patches(rpcs3, fps60=True):
     for name, block in RPCS3_PATCHES.items():
         if '"%s":' % name not in new:
             new = _add_under_hash(new, block)
+    for name, block in RPCS3_PATCHES_V100.items():
+        if PPU_HASH_V100 not in new or '"%s":' % name not in new.split(PPU_HASH_V100, 1)[1]:
+            new = _add_under_hash(new, block, PPU_HASH_V100)
     if new != txt:
         if os.path.exists(imported) and not os.path.exists(imported + ".before_buzz_toolkit"):
             shutil.copy(imported, imported + ".before_buzz_toolkit")

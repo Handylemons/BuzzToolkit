@@ -30,3 +30,17 @@ PPU-35a27ffa1242df7b535018a03b360b3e351a1584:
     Patch:
       - [ be32, 0x0026cbac, 0x38000001 ]
       - [ be32, 0x0022eab4, 0x38600001 ]
+
+PPU-b1aeb0b537a96a86b5d2f7aeb4e6ac60ba117881:
+  "60 FPS (frame interval 1)":
+    Games:
+      "Buzz! Quiz World":
+        BCES00644: [ 01.00, 01.01 ]
+        BCES00645: [ 01.00 ]
+        BCES00647: [ 01.00, 01.01 ]
+    Author: "Buzz Toolkit"
+    Notes: "Frame interval 2 -> 1 on the disc build (display init li r0,2 @0x26a644; SetVsyncTo30 li r3,2 @0x22adac)."
+    Patch Version: "1.0"
+    Patch:
+      - [ be32, 0x0026a644, 0x38000001 ]
+      - [ be32, 0x0022adac, 0x38600001 ]
