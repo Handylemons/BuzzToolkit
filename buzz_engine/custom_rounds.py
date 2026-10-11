@@ -30,6 +30,7 @@ START_LUA = r'''
 function startScript()
   coroutineScript = coroutine.create(function()
     BuzzEngine_SecondBestRoundNo = GetCurrentRoundInGame()
+    BuzzEngine_SecondBestTally = {}          -- points banked in this round so far, per player
     SetFollowOnScript("SecondBestRound")
     if not GetShouldSkipNextRound() then
       local notFirst = GetCurrentRoundInGame() ~= 1
@@ -49,27 +50,39 @@ IncludeScript("FastestFingerFirstRoundPS3")
 function BuzzEngine_ApplySecondBest()
   local n = GetNumberOfContestantsCurrentlyPlayingIncludingLeftPlayers()
   local before, gain, fastest, bestTime = {}, {}, nil, nil
+  -- The running total is the score banked before this round (GetContestantGameScore only changes
+  -- between rounds) + what the player has earned in this round so far. We keep that second part
+  -- ourselves, so it doesn't matter whether the game has added this question's points yet.
+  BuzzEngine_SecondBestTally = BuzzEngine_SecondBestTally or {}
   for i = 1, n do
-    before[i] = GetContestantGameScore(i)
+    BuzzEngine_SecondBestTally[i] = BuzzEngine_SecondBestTally[i] or 0
+    before[i] = GetContestantGameScore(i) + BuzzEngine_SecondBestTally[i]
     gain[i] = GetContestantIterationScore(i)
     local t = GetContestantAnswerTimeTakenSeconds(i) or 999
-    print(string.format("[SecondBest] player %d: total %d, this question %d, time %.2f", i, before[i], gain[i], t or -1))
+    print(string.format("[SecondBest] player %d: total %d (game round score %d), this question %d, time %.2f",
+      i, before[i], GetContestantRoundScore(i), gain[i], t or -1))
     if gain[i] > 0 and not HasContestantLeftGame(i) then
       if fastest == nil or gain[i] > gain[fastest] or (gain[i] == gain[fastest] and t < bestTime) then
         fastest, bestTime = i, t
       end
     end
   end
-  if fastest == nil then return end
+  local function bank()
+    for i = 1, n do BuzzEngine_SecondBestTally[i] = BuzzEngine_SecondBestTally[i] + gain[i] end
+  end
+  if fastest == nil then bank() return end
   local mine = before[fastest] + gain[fastest]
   for j = 1, n do
     if j ~= fastest and before[j] + gain[j] >= mine then
       print(string.format("[SecondBest] fastest player %d stays behind (%d) - keeps %d", fastest, mine, gain[fastest]))
+      bank()
       return
     end
   end
   print(string.format("[SecondBest] fastest player %d would lead with %d - scores 0 instead of %d", fastest, mine, gain[fastest]))
   SetContestantIterationScore(fastest, 0)
+  gain[fastest] = 0
+  bank()
   CalculatePositions()
 end
 

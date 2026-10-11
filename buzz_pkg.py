@@ -15,6 +15,7 @@ Layout (big-endian; psdevwiki "PKG files", checked against community DLC package
   trailer: SHA-1 of everything before it (0x20 bytes incl. padding).
 """
 import hashlib
+import re
 import struct
 
 PS3_PKG_KEY = bytes.fromhex("2E7B71D7C9C9A14EA3221F188828B8F8")
@@ -209,12 +210,21 @@ def build(path, content_id, files, finalized=True, content_type=4, version="01.0
 BUZZ_DLC_TITLE = "BCES00098"      # Buzz!: Quiz TV game data - where Quiz World looks for packs
 
 
-def build_pack_pkg(path, content_id, edats, version="01.00", finalized=True):
+def build_pack_pkg(path, content_id, edats, version="01.00", finalized=True, dlc_title=None):
     """A custom quiz pack as an installable PKG. edats: {"PACK0099/GBRPACK0099.EDAT": bytes, ...}
-    (one pack can carry several language files). Includes a PARAM.SFO for BCES00098 that is only
-    written if the folder has none (no overwrite flag), so an existing install is untouched."""
+    (one pack can carry several language files). Includes a PARAM.SFO for the DLC container that
+    is only written if the folder has none (no overwrite flag), so an existing install is
+    untouched.
+
+    dlc_title names that container and MUST match the one in content_id - it differs per game
+    build (see buzz_engine/games.py), and the id is taken from content_id when not given so the
+    two cannot drift apart.
+    """
+    if not dlc_title:
+        m = re.match(r"[A-Z0-9]+-([A-Z0-9]+)_", content_id or "")
+        dlc_title = m.group(1) if m else BUZZ_DLC_TITLE
     sfo = param_sfo([("CATEGORY", "GD"), ("PARENTAL_LEVEL", 5), ("PS3_SYSTEM_VER", "02.4000"),
-                     ("TITLE", "Buzz!: Quiz TV"), ("TITLE_ID", BUZZ_DLC_TITLE), ("VERSION", "01.00")])
+                     ("TITLE", "Buzz!: Quiz TV"), ("TITLE_ID", dlc_title), ("VERSION", "01.00")])
     files = [("PARAM.SFO", sfo, T_FILE)]
     files += [("USRDIR/" + name, data, OVERWRITE | T_EDAT) for name, data in sorted(edats.items())]
     return build(path, content_id, files, finalized=finalized, version=version)

@@ -26,6 +26,7 @@ sys.path.insert(0, ROOT)
 import build_pack  # noqa: E402
 from buzz_engine import content, game_update, importers, online, pack_numbers, plans, rounds, voices  # noqa: E402
 from buzz_engine.generate import generate, install_edat  # noqa: E402
+from buzz_engine import games  # noqa: E402
 
 PROJECTS = os.path.join(ROOT, "content", "projects")    # pack projects (content/packs = online catalogue)
 SETTINGS = os.path.join(HERE, "settings.json")
@@ -135,8 +136,19 @@ def project_view(pid):
 
 def state():
     vs = voices.list_voices()
-    langs = [{"code": k, "name": v["name"], "voice": (voices.voice_for(k) or {}).get("name")}
-             for k, v in build_pack.LANGUAGES.items()]
+    # each language also says which game build and DLC container it installs into, so the choice
+    # is visible before Generate rather than only in the install message afterwards
+    langs = []
+    for k, v in build_pack.LANGUAGES.items():
+        try:
+            g, dlc = games.resolve(lang=k)
+        except ValueError:
+            g, dlc = None, None
+        langs.append({"code": k, "name": v["name"],
+                      "voice": (voices.voice_for(k) or {}).get("name"),
+                      "game": g, "game_name": games.GAMES.get(g, {}).get("name"), "dlc": dlc,
+                      "builds": [games.GAMES[t]["name"] for t in games.GAMES
+                                 if k in games.GAMES[t]["languages"]]})
     projects = []
     for d in sorted(os.listdir(PROJECTS)) if os.path.isdir(PROJECTS) else []:
         try:
@@ -153,7 +165,10 @@ def state():
             "round_types": [{"type": k, "name": v["name"], "uses": v["uses"]} for k, v in rounds.selectable().items()],
             "presets": {k: lineup_text(v) for k, v in PRESETS.items()}, "rpcs3": settings().get("rpcs3", ""),
             "hook": hook_installed(), "free_number": free_number(),
-            "update": game_update.status(settings().get("rpcs3"))}
+            "update": game_update.status(settings().get("rpcs3")),
+            "games": [{"title": t, "name": games.GAMES[t]["name"], "dlc": games.GAMES[t]["dlc_title"],
+                       "languages": games.GAMES[t]["languages"]}
+                      for t in games.installed_games(settings().get("rpcs3"))]}
 
 
 def save_upload(pid, name, b64):
@@ -302,8 +317,10 @@ def act_install(a):
     if not r:
         raise ValueError("set the RPCS3 folder first")
     res = a["result"]
-    dst = install_edat(res["edat"], res["pack_number"], res["language"], r)
-    return {"installed": dst}
+    title, dlc = games.resolve(res, res.get("language"), r)
+    dst = install_edat(res["edat"], res["pack_number"], res["language"], r, dlc_title=dlc)
+    return {"installed": dst, "game": title, "dlc_title": dlc,
+            "game_name": games.GAMES.get(title, {}).get("name", dlc)}
 
 
 def act_settings(a):

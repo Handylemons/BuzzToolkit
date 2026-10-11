@@ -94,14 +94,16 @@ def _hash(hash_mode, key, data):
     raise ValueError("unknown hash mode %x" % hash_mode)
 
 
-def encrypt(plain, out_name, klic, content_id, version=3, block_size=0x4000):
+def encrypt(plain, out_name, klic, content_id, version=3, block_size=0x4000, npd_type=0):
+    """npd_type: NPD header 'type' field - 0 for DLC packs, 32 for the game's own update files
+    (it is covered by the title/dev hashes, so it must match what the game expects)."""
     klic = bytes.fromhex(klic) if isinstance(klic, str) else klic
     cid = content_id.encode("ascii").ljust(0x30, b"\x00")[:0x30]
     fname = os.path.basename(out_name).encode("ascii")
     flags = 0x3C
     digest = os.urandom(16)                      # used as the data IV for version >= 2
 
-    npd = bytearray(b"NPD\x00" + struct.pack(">III", version, 3, 0) + cid + digest)
+    npd = bytearray(b"NPD\x00" + struct.pack(">III", version, 3, npd_type) + cid + digest)
     title_hash = cmac(NPDRM_OMAC_KEY_3, cid + fname)
     npd += title_hash
     dev_key = bytes(a ^ b for a, b in zip(klic, NPDRM_OMAC_KEY_2))

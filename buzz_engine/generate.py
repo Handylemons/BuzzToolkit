@@ -42,13 +42,23 @@ def generate(project, language=None, audio=True, out_dir=None, progress=print, r
     overrides = {"language": lang, "_out_dir": out_dir}
     voice_note = "no audio"
     if audio:
-        cfg = voices.voice_config(lang, C.get("voice"))
+        # a pack whose content was ported from another title brings its own recordings, so say
+        # where the audio really comes from rather than naming a voice model that never runs
+        ported = C.get("speech_source")
+        # only look for a TTS voice if the pack actually asks for one - a fully ported pack must
+        # not quietly pull in a default voice model it never uses
+        cfg = voices.voice_config(lang, C["voice"]) if C.get("voice") else None
+        notes = []
+        if ported:
+            notes.append("original recordings from %s" % os.path.basename(ported["archive"]))
         if cfg:
             overrides["voice"] = cfg
-            voice_note = "host voice %s" % (cfg["clone"].get("model") or cfg["engine"].split(":", 1)[1])
+            notes.append("host voice %s" % (cfg["clone"].get("model") or cfg["engine"].split(":", 1)[1]))
         else:
             overrides["voice"] = None
-            voice_note = "no %s host voice on this machine - built without audio" % lang
+            if not ported:
+                notes.append("no %s host voice on this machine - built without audio" % lang)
+        voice_note = ", ".join(notes)
     else:
         overrides["voice"] = None
     progress("Building %s pack %d (%s, %s)" % (lang, C["pack_number"], C["text"]["menu_name"], voice_note))
@@ -66,17 +76,24 @@ def generate(project, language=None, audio=True, out_dir=None, progress=print, r
             "content_id": res["content_id"], "voiced": res["voiced"], "voice": voice_note}
 
 
-def install_edat(edat_path, number, lang, rpcs3, allow_replace=False):
+def install_edat(edat_path, number, lang, rpcs3, allow_replace=False, dlc_title=None):
     """Copy the pack straight into RPCS3 (RPCS3's own PKG installer needs RPCS3 closed for the
     command line; File > Install Packages works any time). Refuses to replace a DIFFERENT pack
-    with the same number (a newer build of the same pack is fine)."""
-    from . import pack_numbers
+    with the same number (a newer build of the same pack is fine).
+
+    The destination is created if it is not there, PARAM.SFO included: the DLC container is a
+    game-data title, and a bare folder without that file leaves the game unable to resolve its
+    DLC path at all. Which container depends on the build - the pack language picks it.
+    """
+    from . import games, pack_numbers
+    _, dlc_title = (None, dlc_title) if dlc_title else games.resolve(lang=lang, rpcs3=rpcs3)
     new_cid = pack_numbers.edat_content_id(edat_path) or ""
-    for cid in pack_numbers.installed(rpcs3).get(int(number), []):
+    for cid in pack_numbers.installed(rpcs3, dlc_title).get(int(number), []):
         if not allow_replace and cid[-9:] != new_cid[-9:]:
             raise ValueError("pack %d is already installed in RPCS3 as a different pack (%s) - give this "
                              "pack another number and generate again" % (number, cid))
-    d = os.path.join(rpcs3, "dev_hdd0", "game", buzz_pkg.BUZZ_DLC_TITLE, "USRDIR", "PACK%04d" % number)
+    games.ensure_dlc_container(rpcs3, dlc_title)
+    d = os.path.join(rpcs3, "dev_hdd0", "game", dlc_title, "USRDIR", "PACK%04d" % number)
     os.makedirs(d, exist_ok=True)
     dst = os.path.join(d, "%sPACK%04d.EDAT" % (lang, number))
     if os.path.exists(dst):                              # never lose a pack already installed there

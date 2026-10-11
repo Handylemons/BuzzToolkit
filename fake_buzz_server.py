@@ -920,7 +920,14 @@ class MediusSession:
 
         elif rt_type == RT_MSG_CLIENT_CONNECT_TCP:
             app_id = struct.unpack("<I", payload[4:8])[0] if len(payload) >= 8 else -1
-            self.log(f"CLIENT_CONNECT_TCP ({len(payload)} bytes, appId={app_id})")
+            self.app_id = app_id
+            t = title_for(app_id)
+            if t:
+                self.log(f"CLIENT_CONNECT_TCP ({len(payload)} bytes, appId={app_id}"
+                         f" = {t['name']}{'' if t['served'] else ' - NO CONTENT for this title'})")
+            else:
+                self.log(f"CLIENT_CONNECT_TCP ({len(payload)} bytes, appId={app_id}"
+                         f" = unknown title, serving Quiz World's app)")
             # One flags byte, and it must be present: the client's handler
             # (FUN_003f3040) reads it unconditionally, so an empty payload made it
             # parse garbage and fail with reason 7. Bit 0 = server password follows,
@@ -1014,7 +1021,9 @@ class MediusSession:
         # and the client asked for several info items at once (InfoFilter=0x27c
         # is six bits). So send one message per requested item, tagging each with
         # its InfoFilter bit in the u32, and only set end_of_list on the last.
-        svo_url = f"http://{SVO_HOSTNAME}:{SVO_HTTP_PORT}/{os.environ.get('SVO_ROOT','BUZZPS3_SVML')}/"
+        # per-title root, so Quiz TV and Music Quiz are not handed Quiz World's pages
+        root = os.environ.get("SVO_ROOT") or svo_root_for(getattr(self, "app_id", None))
+        svo_url = f"http://{SVO_HOSTNAME}:{SVO_HTTP_PORT}/{root}/"
         values = [
             (INFO_ID, "1"),
             (INFO_NAME, "Buzz Universe"),
@@ -1237,6 +1246,26 @@ SVML_EMPTY = '<?xml version="1.0" encoding="UTF-8"?>' + CRLF + '<SVML>' + CRLF +
 
 # SVO root path: BUZZPS3_SVML for Buzz, HOST_SVML for SingStar. env SVO_ROOT.
 SVO_ROOT = os.environ.get("SVO_ROOT", "BUZZPS3_SVML")
+
+# The Buzz titles that share this Medius stack, by the appId in CLIENT_CONNECT_TCP. They all
+# complete the same transport handshake against the same hostname and ports, so without this
+# they were all being handed Quiz World's SVO app and failing on content they cannot read.
+# `svo_root` is only a route: content exists for Quiz World alone (see `served`).
+TITLES = {
+    22814: {"name": "Buzz! Quiz World", "svo_root": "BUZZPS3_SVML", "served": True},
+    20984: {"name": "Buzz! Quiz TV", "svo_root": "BUZZTV_SVML", "served": False},
+    23324: {"name": "Buzz! The Ultimate Music Quiz", "svo_root": "BUZZMUSIC_SVML", "served": False},
+}
+
+
+def title_for(app_id):
+    return TITLES.get(app_id)
+
+
+def svo_root_for(app_id):
+    """The SVO application root to advertise to this client."""
+    t = TITLES.get(app_id)
+    return t["svo_root"] if t else os.environ.get("SVO_ROOT", "BUZZPS3_SVML")
 
 # SingStar SVURIStore names (reversed from SingStar Queen EBOOT). .svml pages, HOST_SVML
 # root. Names match SingStar's FUN lookups; paths are ours (what matters is the names
@@ -1532,6 +1561,18 @@ class SvoHandler(http.server.BaseHTTPRequestHandler):
         if delay:
             log.info("[SVO] holding reply for %.0fs (SVO_DELAY)", delay)
             time.sleep(delay)
+
+        # A title we have no SVO content for gets told so, rather than being fed Quiz World's
+        # pages: a 404 leaves the game with a clean "server unavailable" instead of parsing an
+        # app it cannot read. The root in the path is the one we advertised in the universe
+        # reply, so no state has to be shared with the Medius side.
+        unserved = {t["svo_root"]: t for t in TITLES.values() if not t["served"]}
+        top = path.strip("/").split("/", 1)[0]
+        if top in unserved:
+            log.info("[SVO] %s asked for %s - no content for this title yet",
+                     unserved[top]["name"], path)
+            self.send_error(404, "No SVO content for %s" % unserved[top]["name"])
+            return
 
         if path in ("/BUZZPS3_SVML/", "/BUZZPS3_SVML", "/HOST_SVML/", "/HOST_SVML"):
             self._reply(build_svo_start_page(self.client_address[0]))

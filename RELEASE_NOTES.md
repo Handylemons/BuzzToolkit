@@ -1,3 +1,46 @@
+# Buzz Toolkit 0.1.2
+
+**Packs now work on all three European Buzz! Quiz World discs, not just one.**
+
+## Three game builds supported
+* `BCES00644` (En, Fr, De, It, Nl), `BCES00645` (En, Es, Pt) and `BCES00647` (Pl, Ru, El, Hr, Cs).
+* **Nine new pack languages**: French, German, Italian, Dutch, Russian, Polish, Czech, Croatian
+  and Greek, alongside the existing English, Spanish and Portuguese.
+* You do not have to say which disc you have. Packs install into a shared "Buzz!: Quiz TV"
+  game-data folder whose id differs per disc (`BCES00098` for the first two, `BCES00195` for the
+  Pl/Ru/El/Hr/Cs one), and the pack language picks the right one on its own. A pack's content id
+  names that folder too, and the game rejects a pack whose id names the wrong one - so this had
+  to be right rather than guessed.
+* Step 1 now shows which disc your chosen language plays on and where the pack installs, before
+  you generate. If a language belongs to no known disc the app says so instead of building
+  something that cannot be installed.
+
+## Send to RPCS3 creates the folder it needs
+* *Copy straight into RPCS3* now creates the DLC folder when it is missing, **including its
+  `PARAM.SFO`**. An empty folder is not enough: without that file the game cannot resolve its DLC
+  path at all and silently finds no packs, however they are named. Installing into a fresh RPCS3
+  is the difference between the pack appearing and nothing happening.
+* The pack-number check now looks in every disc's folder, so a number cannot clash unseen.
+
+## Self-hosted server
+* The server recognises which Buzz game is connecting (by its Medius app id) and routes it to its
+  own online application: Quiz World `22814`, Quiz TV `20984`, Ultimate Music Quiz `23324`.
+  The log names the game.
+* **Quiz TV and Ultimate Music Quiz are not supported online.** They share the transport and do
+  reach the server, but the online content here is Quiz World's; the other two now get a clean
+  "no content for this title" instead of being handed pages they cannot read and failing oddly.
+  Their own content is not written.
+
+## Also fixed
+* Host-voice generation no longer fails when the toolkit and the system temp folder are on
+  different drives.
+
+## Notes
+* The RPCS3 patches still apply only to `BCES00645` version 01.02. The other two discs ship a
+  different executable, so 60 FPS, TTY debug output and the online login patch do not apply to
+  them yet.
+* As always, no game files, keys or voices are shipped - they are read from your own disc at setup.
+
 # Buzz Toolkit 0.1.1
 
 * **Pack numbers are protected.** Installing a pack replaces any pack with the same number, so the

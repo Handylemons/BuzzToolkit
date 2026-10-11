@@ -124,6 +124,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
     <div class="label">Setup</div>
     <label class="f">RPCS3 folder<input type="text" id="rpcs3" placeholder="folder containing rpcs3.exe"></label>
     <button class="btn small" id="saverpcs3">Save folder</button>
+    <div id="gamesbox" style="margin-top:.4rem"></div>
     <div id="updbox"></div>
     <div id="ffbox"></div>
     <div id="keysbox"></div>
@@ -159,6 +160,10 @@ function renderSide(){
     `<button class="btn small" id="hookbtn">Turn on custom running orders</button><div class="muted" style="font-size:.8rem">One-time change to your game's scripts (backed up): each pack plays its own rounds in the Pack Game menu.</div>`;
   const hb = $("#hookbtn"); if(hb) hb.onclick = async()=>{ S = await api("/api/hook",{}); renderSide(); toast("Custom running orders enabled"); };
   const U = S.update || {};
+  const gb = $("#gamesbox");
+  if (gb) gb.innerHTML = !S.rpcs3 ? "" : (S.games && S.games.length)
+    ? S.games.map(g=>`<span class="pill ok">${esc(g.name)}</span>`).join(" ")
+    : `<div class="muted" style="font-size:.8rem">No Buzz DLC folder in this RPCS3 yet - it is created when you send a pack.</div>`;
   $("#updbox").innerHTML = !S.rpcs3 ? "" : U.ok ? `<span class="pill ok">Game update ${esc(U.want)} installed</span>` :
     `<div class="warn" style="font-size:.85rem">Game update ${esc(U.want)} ${U.installed ? "needed (you have " + esc(U.installed) + ")" : "not installed"}. The toolkit is built on it.</div>` +
     (U.downloaded ? `<button class="btn small" id="updinst">Install update into RPCS3</button><div class="muted" style="font-size:.8rem">Close RPCS3 first. RPCS3's own installer opens; when it's done, press Save folder to re-check.</div>`
@@ -194,6 +199,7 @@ function render(){
       <label class="f">Made by<input type="text" id="f-author" value="${esc(P.author)}" placeholder="optional, shown in the credits"></label>
       <label class="f">Pack number<input type="number" id="f-num" min="1" max="999" value="${P.number}"></label>
     </div>
+    <div id="gametarget" class="muted" style="font-size:.82rem;margin:.3rem 0"></div>
     <div class="muted" style="font-size:.8rem">Every pack needs its own number. Installing a pack replaces any other pack with the same number, so the app won't let you pick one that's already installed in RPCS3 or used by another of your packs.</div>
     <div id="numwarn"></div>
     <label class="f">Description<input type="text" id="f-desc" value="${esc(P.description)}"></label>
@@ -242,7 +248,13 @@ function voiceNote(){
   const l = S.languages.find(x=>x.code===P.language);
   const note = !P.audio ? "(off: silent host)" : (l && l.voice ? `(voice: ${l.voice})` : `(no ${P.language} host voice yet: the pack will be silent)`);
   $("#voicenote").textContent = note;
+  // which game this language's pack is for, and where it installs - visible before Generate
+  const games = (l && l.builds && l.builds.length) ? l.builds.join(" / ") : null;
   $("#gosummary").textContent = `${l?l.name:P.language} · ${P.audio && l && l.voice ? "with host voice" : "no audio"} · ${(P.rounds4p||[]).length} rounds + Final Countdown`;
+  const gt = $("#gametarget");
+  if (gt) gt.innerHTML = !l ? "" : games
+    ? `Plays on: <b>${esc(games)}</b> <span class="muted">(installs into ${esc(l.dlc||"?")})</span>`
+    : `<span class="warn">No known Buzz build uses ${esc(P.language)} - this pack cannot be installed.</span>`;
 }
 
 // ---------- questions
@@ -398,7 +410,8 @@ function showResult(res){
     <div class="row"><button class="btn" id="openf">Open folder</button><button class="btn" id="inst">Copy straight into RPCS3</button></div>`;
   $("#golog").appendChild(box);
   $("#openf").onclick=()=>api("/api/open",{path:res.pkg});
-  $("#inst").onclick=async()=>{const r=await api("/api/install",{result:res}); toast("Installed: "+r.installed);};
+  $("#inst").onclick=async()=>{const r=await api("/api/install",{result:res});
+    toast("Installed into "+(r.game_name||r.dlc_title)+": "+r.installed);};
 }
 
 // ---------- online server page

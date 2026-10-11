@@ -8,7 +8,7 @@ suffix) identify the pack, so a newer build of the SAME pack is fine and anythin
 import os
 import re
 
-DLC_TITLE = "BCES00098"
+DLC_TITLE = "BCES00098"      # kept for callers that predate games.py; see games.GAMES
 FIRST_CHOICE = list(range(99, 69, -1)) + list(range(1, 70)) + list(range(100, 1000))
 
 
@@ -28,10 +28,21 @@ def edat_content_id(path):
     return head[0x10:0x40].rstrip(b"\x00").decode("ascii", "replace")
 
 
-def installed(rpcs3):
-    """Packs installed in RPCS3 -> {number: [content IDs]}."""
+def installed(rpcs3, dlc_title=None):
+    """Packs installed in RPCS3 -> {number: [content IDs]}.
+
+    With no dlc_title, every build's container is scanned and the results merged: a pack number
+    has to be free in whichever container it lands in, and the user may have both games.
+    """
+    if dlc_title is None:
+        from . import games
+        out = {}
+        for g in games.GAMES.values():
+            for n, cids in installed(rpcs3, g["dlc_title"]).items():
+                out.setdefault(n, []).extend(cids)
+        return out
     out = {}
-    base = os.path.join(rpcs3 or "", "dev_hdd0", "game", DLC_TITLE, "USRDIR")
+    base = os.path.join(rpcs3 or "", "dev_hdd0", "game", dlc_title, "USRDIR")
     if not rpcs3 or not os.path.isdir(base):
         return out
     for d in os.listdir(base):

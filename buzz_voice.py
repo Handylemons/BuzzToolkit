@@ -22,6 +22,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -166,7 +167,7 @@ def _clone(todo, ref, opts, vocab):
                     still.append(todo[j["i"]])
             pending = still
         for i, b in best.items():
-            os.replace(b["wav"], todo[i]["out"])
+            shutil.move(b["wav"], todo[i]["out"])        # temp dir may be on another drive
             b["wav"] = os.path.basename(todo[i]["out"])
             with open(todo[i]["out"][:-4] + ".json", "w", encoding="utf-8") as f:
                 json.dump(b, f, indent=1)

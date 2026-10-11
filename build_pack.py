@@ -47,16 +47,30 @@ LANG = "GBR"                            # default pack language (see LANGUAGES)
 # the disc packs INEPACK0100 / ESPPACK0100 / PRTPACK0100 and retail GBR / DEU DLC).
 # whisper = speech-recognition language used to check generated host lines.
 LANGUAGES = {
-    "GBR": {"name": "English (UK)", "whisper": "en"}, "INE": {"name": "English (international)", "whisper": "en"},
+    # Pack (DLC) language codes. NOTE these are not always the disc archive codes: English DLC
+    # is GBR while the disc archive is INE, confirmed by the retail GBRPACK files in BCES00098
+    # sitting beside a disc that ships INEPACK0100. Which build ships which, and the DLC
+    # container each needs, is in buzz_engine/games.py - the one owner of that mapping.
+    "GBR": {"name": "English (UK)", "whisper": "en"},
     "ESP": {"name": "Spanish", "whisper": "es"}, "PRT": {"name": "Portuguese", "whisper": "pt"},
     "DEU": {"name": "German", "whisper": "de"}, "FRA": {"name": "French", "whisper": "fr"},
     "ITA": {"name": "Italian", "whisper": "it"}, "NLD": {"name": "Dutch", "whisper": "nl"},
-    "SWE": {"name": "Swedish", "whisper": "sv"}, "DAN": {"name": "Danish", "whisper": "da"},
-    "FIN": {"name": "Finnish", "whisper": "fi"}, "NOR": {"name": "Norwegian", "whisper": "no"},
-    "POL": {"name": "Polish", "whisper": "pl"},
+    "RUS": {"name": "Russian", "whisper": "ru"}, "POL": {"name": "Polish", "whisper": "pl"},
+    "CZE": {"name": "Czech", "whisper": "cs"}, "CRO": {"name": "Croatian", "whisper": "hr"},
+    "GRC": {"name": "Greek", "whisper": "el"},
 }
+
+# Which build ships which of these, and the DLC container each needs: buzz_engine/games.py
+
 KLIC = None                              # game klicensee: buzz_engine.keys (from the user's EBOOT)
-MAX_Q, MAX_A = 93, 30
+# The DLC rides on a shared "Buzz! Quiz TV" container whose title id differs per game build:
+# BCES00098 for BCES00645 (En,Es,Pt), BCES00195 for BCES00647 (Pl,Ru,El,Hr,Cs). It names the
+# install directory AND goes in the content id, which the EDAT is validated against.
+DLC_TITLE = "BCES00098"
+# Retail Quiz World's own disc pack (INEPACK0100) ships questions up to 115 characters and
+# answers up to 40, so those are the real ceilings. 93/30 covers 99% of retail and is still the
+# comfortable target for hand-written packs, but imported content gets the full range.
+MAX_Q, MAX_A = 115, 40
 SUBJECT_ID = 115                       # question category item defined by questioncategories.clu
 INTROS = ["HERE'S A QUESTION ON %s. PLACE YOUR BETS!",
           "THIS ONE'S ON %s. WHAT WILL YOU BET?",
@@ -272,9 +286,31 @@ def credits_page(C):
 VOICE_KINDS = {"standard": "standard", "picture": "picture", "all_that_apply": "ata", "point_stealer": "ps"}
 
 
-def host_speech(C, speech_ids, questions):
+def ported_speech(C, speech_ids):
+    """-> {speech id: .rsf bytes} taken from the disc the questions came from.
+
+    Content ported from another Buzz title keeps its own recordings: `speech_source` names the
+    archive and, per round, the source sound id of each question (parallel to that round's list,
+    null where there is none). Transcoding a real performance beats synthesising a new one, so
+    this runs before any TTS and whatever it supplies is never generated."""
+    src = C.get("speech_source")
+    if not src or os.environ.get("BUZZ_NO_VOICE"):
+        return {}
+    import ps2_to_rsf
+    wanted = {}
+    for rnd, ids in src["ids"].items():
+        kind = VOICE_KINDS[rnd]
+        for b, sid in enumerate(ids):
+            if sid and (kind, b) in speech_ids:
+                wanted[speech_ids[(kind, b)]] = int(sid)
+    got = ps2_to_rsf.clips(src["archive"], sorted(set(wanted.values())), progress=print)
+    return {sp: got[sid] for sp, sid in wanted.items() if sid in got}
+
+
+def host_speech(C, speech_ids, questions, skip=()):
     """-> {speech id: .rsf bytes} for the rounds listed in C["voice"]["rounds"].
-    questions: speech-key kind -> on-screen question text per content item."""
+    questions: speech-key kind -> on-screen question text per content item.
+    skip: speech ids already supplied by ported_speech, which are not synthesised."""
     cfg = C.get("voice")
     if not cfg or os.environ.get("BUZZ_NO_VOICE"):
         return {}
@@ -283,9 +319,11 @@ def host_speech(C, speech_ids, questions):
     for rnd in cfg.get("rounds", ["point_stealer"]):
         kind = VOICE_KINDS[rnd]
         for b, text in enumerate(questions[kind]):
-            if (kind, b) in speech_ids:
+            if (kind, b) in speech_ids and speech_ids[(kind, b)] not in skip:
                 lines[speech_ids[(kind, b)]] = say.get(text) or buzz_voice.host_line(text, pron)
     sids = sorted(lines)
+    if not sids:
+        return {}
     rsfs = buzz_voice.host_clips([lines[s] for s in sids], cfg.get("engine"), cfg.get("speed", 1.0),
                                  cfg.get("clone"), cfg.get("vocab"), cfg.get("warmth", 0.0))
     return dict(zip(sids, rsfs))
@@ -454,9 +492,13 @@ def build(content_path, overrides=None):
     files[P + "QUESTIONASSETS/VIDEO/pics001.sdi"] = sdi1
     files[P + "QUESTIONASSETS/VIDEO/pics002.sdi"] = sdi2
 
-    # ---- host speech: TTS for the configured rounds, silence for everything else
-    clips = host_speech(C, speech_ids, {"standard": [q[0] for q in std], "picture": [q[1] for q in pic],
-                                        "ata": [q[0] for q in ata], "ps": [q[0] for q in pst]})
+    # ---- host speech: the source disc's own recordings where the content was ported, TTS for
+    # anything newly written, silence for everything else
+    clips = ported_speech(C, speech_ids)
+    clips.update(host_speech(C, speech_ids,
+                             {"standard": [q[0] for q in std], "picture": [q[1] for q in pic],
+                              "ata": [q[0] for q in ata], "ps": [q[0] for q in pst]},
+                             skip=set(clips)))
     for sid in speech_ids.values():
         files[P + "QUESTIONASSETS/SPEECH/QUESTIONS/ONDEMAND/%d.rsf" % (6000000000 + sid)] = clips.get(sid, silent)
 
@@ -474,7 +516,12 @@ def build(content_path, overrides=None):
     edat = os.path.join(out_dir, "%sPACK%04d.EDAT" % (lang, num))
     write_pak(plain, entries)
     data = open(plain, "rb").read()
-    cid = "EP9000-BCES00098_00-BQC1%s%04d%s" % (lang, num, C.get("content_suffix", "CUSTM")[:5].ljust(5, "X"))
+    # the content id must name the DLC container the pack installs into, or the EDAT is
+    # rejected; the pack language picks the build, so this needs no setting by hand
+    from buzz_engine import games
+    _, dlc = games.resolve(C, lang)
+    cid = "EP9000-%s_00-BQC1%s%04d%s" % (dlc, lang, num,
+                                         C.get("content_suffix", "CUSTM")[:5].ljust(5, "X"))
     from buzz_engine import keys
     klic = KLIC or keys.get("klic")
     enc = edat_tool.encrypt(data, edat, klic, cid)
