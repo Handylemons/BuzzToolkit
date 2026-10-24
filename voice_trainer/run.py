@@ -9,6 +9,8 @@ Presets (measured on an RTX 3060, English host, 24 held-out questions):
   standard  s3gen 1500 + t3 500 steps, ~1 h in total   speaker similarity 0.964, word errors 13.5%
   best      s3gen 4000 + t3 1000 steps, ~1 h 40 min    speaker similarity 0.959, word errors 14.9%
   (untrained base model: 0.886 / 13.9%.) Fewer than 500 t3 steps adds mispronunciations.
+  Czech/Croatian (spoken through the Polish model) default to t3 1500: 500 -> 1500 steps cut word
+  errors 31.8% -> 27.3% (CZE) and 26.0% -> 19.6% (CRO), similarity 0.978/0.979 -> 0.982/0.980.
 
 Steps (each resumable; finished steps are skipped):
   1 corpus    decode every host line (disc questions + commentary + DLC) with its text
@@ -42,7 +44,7 @@ def export(work, name):
     import numpy as np
     import soundfile as sf
     sys.path.insert(0, HERE)
-    from voice_trainer.data import load_items
+    from voice_trainer.data import load_items, work_lang
     out = os.path.join(HERE, "voice_models", name)
     os.makedirs(out, exist_ok=True)
     shutil.copy(os.path.join(work, "models", "s3gen_flow.pt"), out)
@@ -57,7 +59,9 @@ def export(work, name):
         x, sr = sf.read(os.path.join(work, "audio", it["id"] + ".flac"), dtype="float32")
         parts += [x, np.zeros(int(0.25 * sr), np.float32)]
     sf.write(os.path.join(out, "reference.wav"), np.concatenate(parts[:-1]), sr)
-    json.dump({"reference_clips": [(it["id"], it["raw_text"]) for it in picks], "work": work},
+    lang = work_lang(work)[0]
+    json.dump({"lang": "GBR" if lang == "INE" else lang, "work": work,   # voices.py matches packs on lang
+               "reference_clips": [(it["id"], it["raw_text"]) for it in picks]},
               open(os.path.join(out, "info.json"), "w"), indent=1)
     print("exported", out)
     return out
@@ -70,21 +74,30 @@ if __name__ == "__main__":
     ap.add_argument("--pack", action="append", default=[])
     ap.add_argument("--question-pak", default=None)
     ap.add_argument("--name", default="buzz_host")
+    ap.add_argument("--lang", default="INE", help="disc language of the host to learn: INE (English), "
+                    "ESP, PRT, FRA, DEU, ITA, NLD, POL, RUS, GRC, CZE, CRO")
     ap.add_argument("--preset", choices=sorted(PRESETS), default="standard")
     ap.add_argument("--s3gen-steps", type=int, default=None, help="override the preset")
     ap.add_argument("--t3-steps", type=int, default=None, help="override the preset")
+    ap.add_argument("--retrain-t3", action="store_true", help="train the delivery again (e.g. with more "
+                    "--t3-steps), reusing the corpus and voice; the previous one is kept as t3_lora.prev")
     a = ap.parse_args()
     a.s3gen_steps = a.s3gen_steps or PRESETS[a.preset][0]
-    a.t3_steps = a.t3_steps or PRESETS[a.preset][1]
+    a.t3_steps = a.t3_steps or (max(1500, PRESETS[a.preset][1]) if a.lang in ("CZE", "CRO")
+                                else PRESETS[a.preset][1])
     w = a.work
     if not os.path.exists(os.path.join(w, "manifest.jsonl")):
-        args = ["corpus", "--disc", a.disc, "--work", w] + sum([["--pack", p] for p in a.pack], [])
+        args = ["corpus", "--disc", a.disc, "--work", w, "--lang", a.lang] + sum([["--pack", p] for p in a.pack], [])
         step("1 corpus", args + (["--question-pak", a.question_pak] if a.question_pak else []))
     if not os.path.exists(os.path.join(w, "speakers.json")):
         step("2 features", ["features", "--work", w])
     if not os.path.exists(os.path.join(w, "models", "s3gen_flow.pt")):
         step("3 s3gen", ["train_s3gen", "--work", w, "--steps", str(a.s3gen_steps)])
-    if not glob.glob(os.path.join(w, "models", "t3_lora", "adapter_model.*")):
+    lora = os.path.join(w, "models", "t3_lora")
+    if a.retrain_t3 and os.path.isdir(lora):
+        shutil.rmtree(lora + ".prev", ignore_errors=True)
+        os.rename(lora, lora + ".prev")
+    if not glob.glob(os.path.join(lora, "adapter_model.*")):
         step("4 t3", ["train_t3", "--work", w, "--steps", str(a.t3_steps)])
     out = export(w, a.name)
     ref = os.path.join(out, "reference.wav")

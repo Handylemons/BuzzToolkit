@@ -35,6 +35,10 @@ import buzz_index  # noqa: E402
 import buzz_rsf  # noqa: E402
 import buzz_text  # noqa: E402
 
+# disc language code -> ISO code (as build_pack.LANGUAGES "whisper"; not imported from there because
+# build_pack needs pycryptodome, which the voice environment does not have)
+DISC_ISO = {"INE": "en", "ESP": "es", "PRT": "pt", "FRA": "fr", "DEU": "de", "ITA": "it", "NLD": "nl",
+            "POL": "pl", "RUS": "ru", "GRC": "el", "CZE": "cs", "CRO": "hr"}
 OUT_RATE = 24000
 GAP = 4                                   # silent frames between clips in the decode stream
 
@@ -145,14 +149,14 @@ def build(sources, work):
     return total
 
 
-def find_sources(disc, packs, question_pak=None):
+def find_sources(disc, packs, question_pak=None, lang="INE"):
     u = os.path.join(disc, "PS3_GAME", "USRDIR")
     src = []
-    qp = question_pak or os.path.join(u, "PACK0100", "INEPACK0100.PAK")
+    qp = question_pak or os.path.join(u, "PACK0100", "%sPACK0100.PAK" % lang)
     if os.path.exists(qp):
         src.append((qp, "question"))
     cp = os.path.join(u, "GAME", "INE.PAK")
-    if os.path.exists(cp):
+    if lang == "INE" and os.path.exists(cp):      # comments.dat is read as Latin-1: English only
         src.append((cp, "commentary"))
     src += [(p, "question") for p in packs]
     return src
@@ -164,8 +168,12 @@ if __name__ == "__main__":
     ap.add_argument("--pack", action="append", default=[], help="decrypted DLC pack (.DAT), repeatable")
     ap.add_argument("--question-pak", default=None, help="override the disc question pack path")
     ap.add_argument("--work", required=True)
+    ap.add_argument("--lang", default="INE", help="disc language code of the host to learn (INE, ESP, CZE, CRO, ...)")
     a = ap.parse_args()
-    srcs = find_sources(a.disc, a.pack, a.question_pak)
+    iso = DISC_ISO[a.lang]
+    os.makedirs(a.work, exist_ok=True)
+    json.dump({"lang": a.lang, "iso": iso}, open(os.path.join(a.work, "lang.json"), "w"))
+    srcs = find_sources(a.disc, a.pack, a.question_pak, a.lang)
     for s in srcs:
         print("source:", s)
     print("clips written:", build(srcs, a.work))

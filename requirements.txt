@@ -1,3 +1,5 @@
 numpy
 pillow
 pycryptodome
+pyusb
+libusb-package

@@ -1,3 +1,78 @@
+# Buzz Toolkit 0.1.5
+
+**Czech and Croatian packs now have a host voice, every language on the three discs can be
+voiced, and Xbox 360 Big Button pads can be your buzzers.**
+
+## Czech and Croatian question reading
+* **Fixed: custom Czech packs came out silent.** The voice engine has no Czech or Croatian, so
+  these packs were built without audio, and Generate failed outright once a Czech voice existed.
+* The toolkit now speaks both through its Polish voice. It first rewrites the text the way a
+  Polish reader would pronounce it (`ř` → `rz`, `ě` → `je`/`ie`, `ť`/`ď`/`ň` softening, Croatian
+  `đ`, `lj`, `nj`, syllabic `r`), and writes out numbers, decimals and percentages as Czech or
+  Croatian words. Otherwise `2008` would be read in Polish.
+* The voice is cloned from your disc's own Czech or Croatian question reader.
+
+## Train a voice in any disc language
+* The voice trainer takes `--lang` (ESP, PRT, FRA, DEU, ITA, NLD, POL, RUS, GRC, CZE, CRO). It
+  learns from that language's question reader on your disc, about 5,800 lines each for Czech and
+  Croatian. The trainer's end-of-run check listens in that language too.
+* Trained voices are now used for every language, not just English.
+* Czech and Croatian train with 1,500 delivery steps by default. Measured against the earlier 500
+  steps:
+
+| | Misheard words, untrained | 500 steps | **1,500 steps** | Real host |
+|---|---|---|---|---|
+| Czech | 55.4% | 31.8% | **27.3%** | 15.5% |
+| Croatian | 46.8% | 26.0% | **19.6%** | 20.5% |
+
+  Similarity to the real host: Czech 0.982 (real recordings score 0.983), Croatian 0.980 (0.987).
+* **New `--retrain-t3`** trains a voice's delivery again with more steps, reusing the decoded disc
+  lines. The previous training is kept.
+* The README has new sections on accuracy, fixing words that come out wrong (`pronounce` and
+  `say` in `pack.json`), and training further.
+
+## Big Button buzzers
+* **New: play with Xbox 360 Big Button pads** (from *Scene It?*) as the four buzzers. In the app,
+  open *Big Button buzzers* and switch on. The page checks the IR receiver, its WinUSB driver and
+  RPCS3's controller profile, and shows every press so you can see which pad is which player.
+* Switching on maps RPCS3 players 1-4 to the pads' keys in the game's controller profile and sets
+  RPCS3's Buzz! emulation to four buzzers, backing up your settings first. Switching off puts
+  them back. Works with all three discs.
+* The README's new *Big Button buzzers* section covers the Zadig driver step, how a press travels
+  from pad to game, and a troubleshooting table.
+
+## Real PS3 consoles
+* Packages now carry the same install metadata as Sony's own Buzz DLC: firmware and app version,
+  and the install folder. RPCS3 never needed it, but a console's installer may.
+* A new README section, *Installing on a real PS3*, covers HEN/CFW install steps, an FTP fallback,
+  a troubleshooting table of every likely failure point, and what to report. **Still untested on
+  hardware.** Unmodified consoles can't install custom packages at all.
+
+## Fixes
+* **Russian and Greek voice lines are now actually checked.** The speech check only counted
+  Latin letters, so every Cyrillic or Greek line scored as perfect and a mispronounced take was
+  never made again. Our 12-language test caught a Greek line with two wrong words.
+* Pack file names keep their letters when the pack name has accents (`ČESKÝ KVÍZ` →
+  `CeskyKviz_CZE_PACK0097.pkg`, was `eskKvz`).
+* Voice generation no longer crashes on progress messages Windows couldn't decode.
+
+## Updating
+* **Run `Install.bat` again** after unzipping. It installs `num2words` (Czech number reading)
+  and the USB library for the Big Button buzzers.
+* Voices you trained earlier still work. To get the new Czech or Croatian voices, train them with
+  `--lang CZE` / `--lang CRO` (see Host voice in the README).
+
+## Known limits
+* Czech pronunciation is good but not native: about 1 word in 4 is misheard by speech
+  recognition, against 1 in 6 for the real reader. Use `pronounce` for words that matter.
+* Ordinals, Roman numerals and abbreviations are read as written; write them as words.
+* Real-console installs are untested.
+* Big Button buzzers are tested up to RPCS3 (receiver, presses, mapping and restore); a full
+  four-pad game hasn't been played through yet.
+* The host's spoken links around a question are still in English regardless of the pack
+  language.
+* Matchmaking and online multiplayer remain unavailable; only the MyBuzz quiz menus work.
+
 # Buzz Toolkit 0.1.4
 
 **Accents and non-Latin alphabets are no longer stripped out of packs.**

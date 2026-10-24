@@ -7,6 +7,14 @@ import random
 import torch
 
 
+def work_lang(work):
+    """-> (pack language code, ISO code) the corpus in <work> was built for (lang.json, written by
+    corpus.py; work folders from before language support are English)."""
+    p = os.path.join(work, "lang.json")
+    d = json.load(open(p)) if os.path.exists(p) else {}
+    return d.get("lang", "INE"), d.get("iso", "en")
+
+
 def load_items(work, need_text=False, min_dur=0.8, max_dur=12.0):
     """-> (train, val) lists of feature dicts: speaker-filtered, length-filtered, with a fixed
     held-out validation set (every 60th clip by id)."""

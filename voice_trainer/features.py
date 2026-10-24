@@ -26,8 +26,22 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
 from chatterbox.tts import ChatterboxTTS, punc_norm  # noqa: E402
+import buzz_respell  # noqa: E402
+from voice_trainer.data import work_lang  # noqa: E402
 
 SHARD = 500
+
+
+def load_model(iso):
+    """English -> Chatterbox's English model; any other language -> the multilingual one (same
+    S3Gen and voice encoder, its own T3 and text tokenizer)."""
+    if iso == "en":
+        model = ChatterboxTTS.from_pretrained(device="cuda")
+    else:
+        from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+        model = ChatterboxMultilingualTTS.from_pretrained(device=torch.device("cuda"))
+    model.buzz_iso = iso
+    return model
 
 
 def norm_text(t):
@@ -58,7 +72,11 @@ def extract(model, wav24, text):
     item = {"tokens": tok.short().cpu(), "mel": mel.half().cpu(), "xvec": xvec.float().cpu(),
             "ve": torch.from_numpy(np.asarray(ve)).float()}
     if text:
-        item["text"] = model.tokenizer.text_to_tokens(norm_text(text))[0].short().cpu()
+        if getattr(model, "buzz_iso", "en") == "en":
+            item["text"] = model.tokenizer.text_to_tokens(norm_text(text))[0].short().cpu()
+        else:                    # tokenised exactly as buzz_tts_clone.generate will at inference
+            t, tag = buzz_respell.prepare(norm_text(text), model.buzz_iso)
+            item["text"] = model.tokenizer.text_to_tokens(t, language_id=tag)[0].short().cpu()
     return item
 
 
@@ -72,7 +90,7 @@ def main(work):
         done |= {it["id"] for it in torch.load(f)}
     todo = [m for m in man if m["id"] not in done]
     print("clips %d, already done %d, to do %d" % (len(man), len(done), len(todo)), flush=True)
-    model = ChatterboxTTS.from_pretrained(device="cuda")
+    model = load_model(work_lang(work)[1])
     shard_no = len(glob.glob(os.path.join(out_dir, "shard_*.pt")))
     buf = []
     for i, m in enumerate(todo):

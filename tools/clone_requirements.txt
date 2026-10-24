@@ -54,6 +54,7 @@ msgpack==1.2.2
 narwhals==2.26.0
 networkx==3.6.1
 nodeenv==1.11.0
+num2words==0.5.14
 numba==0.67.0
 numpy==1.26.4
 omegaconf==2.3.1

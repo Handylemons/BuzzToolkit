@@ -44,10 +44,10 @@ def voice_config(lang, base=None):
     iso = build_pack.LANGUAGES.get(lang, {}).get("whisper", "en")
     cfg["engine"] = v["engine"]
     clone = dict(cfg.get("clone") or {}, lang=iso)
-    if v["trained"] and iso == "en":
+    if v["trained"]:                         # voice_trainer output, trained for this language
         clone["model"] = v["model"]
     else:
-        clone.pop("model", None)             # untrained / non-English: clone from the reference
+        clone.pop("model", None)             # untrained: clone from the reference alone
     cfg["clone"] = clone
     cfg["language"] = lang
     if iso != "en":

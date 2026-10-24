@@ -19,6 +19,8 @@ import soundfile as sf
 import torch
 from chatterbox.tts import ChatterboxTTS
 
+import buzz_respell
+
 
 ENGLISH = ("en", "", None)
 
@@ -31,10 +33,10 @@ def load(model_dir=None, device=None, lang=None):
         from chatterbox.mtl_tts import ChatterboxMultilingualTTS
         model = ChatterboxMultilingualTTS.from_pretrained(device=torch.device(device))
         model.buzz_lang = lang
-        return model
-    model = ChatterboxTTS.from_pretrained(device=device)
-    model.buzz_lang = None
-    if model_dir:
+    else:
+        model = ChatterboxTTS.from_pretrained(device=device)
+        model.buzz_lang = None
+    if model_dir:                # weights trained by voice_trainer for this model and language
         flow = os.path.join(model_dir, "s3gen_flow.pt")
         if os.path.exists(flow):
             model.s3gen.flow.load_state_dict(torch.load(flow, map_location=device))
@@ -52,7 +54,9 @@ def generate(model, text, opts, take=0):
     kw = dict(exaggeration=opts.get("exaggeration", 0.5), cfg_weight=opts.get("cfg", 0.5),
               temperature=opts.get("temperature", 0.8))
     if getattr(model, "buzz_lang", None):
-        wav = model.generate(text, language_id=model.buzz_lang, **kw)
+        # Czech/Croatian are not Chatterbox languages: spoken through Polish after respelling
+        text, tag = buzz_respell.prepare(text, model.buzz_lang)
+        wav = model.generate(text, language_id=tag, **kw)
     else:
         wav = model.generate(text, **kw)
     return wav.squeeze(0).detach().cpu().numpy()
@@ -69,7 +73,7 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=1234)
     ap.add_argument("--lang", default="en", help="ISO language code (en, es, pt, de, fr, it, ...)")
     a = ap.parse_args()
-    model = load(a.model if a.lang in ENGLISH else None, lang=a.lang)
+    model = load(a.model, lang=a.lang)
     model.prepare_conditionals(a.ref, exaggeration=a.exaggeration)
     opts = {"exaggeration": a.exaggeration, "cfg": a.cfg, "temperature": a.temperature, "seed": a.seed}
     for job in json.load(open(a.jobs, encoding="utf-8")):

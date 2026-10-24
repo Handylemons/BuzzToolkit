@@ -41,7 +41,8 @@ _SAME = {"colour": "color", "colours": "colors", "coloured": "colored", "favouri
 def words(s):
     s = s.lower().replace("-", " ")
     s = re.sub(r"\d+", lambda m: " " + _num(int(m.group())) + " ", s)
-    return [_SAME.get(w, w) for w in re.findall(r"[a-z\u00c0-\u024f']+", s)]
+    # any alphabet: a Latin-only pattern dropped every Cyrillic/Greek word, so ru/el always scored 0
+    return [_SAME.get(w, w) for w in re.findall(r"[^\W\d_][^\W\d_']*", s)]
 
 
 def wer(ref, hyp):

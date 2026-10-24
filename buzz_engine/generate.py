@@ -67,7 +67,9 @@ def generate(project, language=None, audio=True, out_dir=None, progress=print, r
         res["files"], res["main bank"], res["voiced"]))
     edat = open(res["edat"], "rb").read()
     num = int(C["pack_number"])
-    title = re.sub(r"[^A-Za-z0-9]+", "", C["text"]["menu_name"].title()) or "Pack"
+    import unicodedata                                    # ČESKÝ KVÍZ -> CeskyKviz, not eskKvz
+    plain = unicodedata.normalize("NFKD", C["text"]["menu_name"]).encode("ascii", "ignore").decode()
+    title = re.sub(r"[^A-Za-z0-9]+", "", plain.title()) or "Pack"
     pkg_path = os.path.join(out_dir, "%s_%s_PACK%04d.pkg" % (title, lang, num))
     size = buzz_pkg.build_pack_pkg(pkg_path, res["content_id"], {"PACK%04d/%sPACK%04d.EDAT" % (num, lang, num): edat})
     os.remove(res["edat"].replace(".EDAT", ".DAT"))          # plain container: only needed while building

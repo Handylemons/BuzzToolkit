@@ -22,7 +22,7 @@ import torch
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 import buzz_tts_clone  # noqa: E402
-from voice_trainer.data import load_items  # noqa: E402
+from voice_trainer.data import load_items, work_lang  # noqa: E402
 
 
 class SpeakerScorer:
@@ -49,13 +49,14 @@ def main(a):
     centroid = centroid / centroid.norm()
     ceiling = np.mean([(r @ centroid).item() for r in real])
 
-    model = buzz_tts_clone.load(a.model)
+    iso = work_lang(a.work)[1]
+    model = buzz_tts_clone.load(a.model, lang=iso)
     model.prepare_conditionals(a.ref, exaggeration=a.exaggeration)
     opts = {"exaggeration": a.exaggeration, "cfg": a.cfg, "temperature": 0.8, "seed": 1234}
     out = os.path.join(a.work, "eval", a.label)
     os.makedirs(out, exist_ok=True)
     import whisper
-    asr = whisper.load_model("small.en")
+    asr = whisper.load_model("small.en" if iso == "en" else "small")
     from buzz_tts_verify import wer  # noqa: E402  (same scoring as the pipeline check)
     sims, wers = [], []
     for it in val:
@@ -63,7 +64,7 @@ def main(a):
         sf.write(os.path.join(out, it["id"] + ".wav"), x, model.sr)
         x16 = librosa.resample(x, orig_sr=model.sr, target_sr=16000)
         sims.append((sc.embed(x16) @ centroid).item())
-        heard = asr.transcribe(x16.astype(np.float32), language="en", fp16=False, temperature=0.0)["text"]
+        heard = asr.transcribe(x16.astype(np.float32), language=iso, fp16=False, temperature=0.0)["text"]
         wers.append(wer(it["raw_text"], heard))
     res = {"label": a.label, "speaker_sim": round(float(np.mean(sims)), 4), "real_ceiling": round(float(ceiling), 4),
            "wer": round(float(np.mean(wers)), 4), "n": len(val)}

@@ -114,6 +114,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 <aside>
   <div class="brand"><div class="buzzer" aria-hidden="true"></div><div><h1>Buzz Pack Studio</h1><small>Custom quiz packs for Buzz! Quiz World <span id="ver"></span></small></div></div>
   <button class="btn" id="srvbtn" style="justify-content:space-between;display:flex;align-items:center"><span>Online server</span><span class="pill" id="srvpill">…</span></button>
+  <button class="btn" id="bbbtn" style="justify-content:space-between;display:flex;align-items:center"><span>Big Button buzzers</span><span class="pill" id="bbpill">…</span></button>
   <div class="label">Your packs</div>
   <div class="plist" id="plist"></div>
   <form id="newform" class="row" style="gap:6px">
@@ -458,7 +459,46 @@ async function renderServer(st){
   clearTimeout(srvTimer); srvTimer=setTimeout(()=>{ if(!P && $("#main h2")?.textContent==="Online server") renderServer(); }, 5000);
 }
 
-loadState().then(()=>{ srvPill(); const u=new URLSearchParams(location.search); const q=u.get("p"); if(q) openProject(q); else if(u.get("page")==="server") renderServer(); });
+let bbTimer;
+async function bbPill(){ try{ const st = await api("/api/buzzers",{op:"status"}); const p=$("#bbpill"); p.textContent = st.running?"on":"off"; p.className = "pill "+(st.running?"ok":"none"); return st; }catch(e){} }
+$("#bbbtn").onclick = ()=>{ P=null; renderSide(); renderBuzzers(); };
+const BB_RECEIVER = {ok:[1,"Receiver found"], running:[1,"Receiver found and in use by the buzzers"],
+  missing:[0,"Receiver not found: plug in the Big Button IR receiver"],
+  no_driver:[0,"The receiver needs the WinUSB driver: install it once with Zadig (see the README)"],
+  no_library:[0,"USB library missing: run Install.bat again"]};
+async function renderBuzzers(st){
+  st = st || await api("/api/buzzers",{op:"status"});
+  bbPill();
+  const tick=(ok,t)=>`<div>${ok?"✓":"✗"} ${esc(t)}</div>`;
+  const rc = BB_RECEIVER[st.receiver] || [0, st.receiver];
+  $("#main").innerHTML = `
+  <div class="head"><div><h2>Big Button buzzers</h2><div class="sub">Use Xbox 360 Big Button (Scene It) pads as the Buzz! buzzers in RPCS3</div></div></div>
+  <section class="step"><header><h3>Buzzers</h3><span class="hint"><span class="pill ${st.running?"ok":"none"}">${st.running?"Running":"Stopped"}</span></span></header>
+    <label class="switch"><input type="checkbox" id="bbtoggle" ${st.running?"checked":""}> Big Button buzzers on</label>
+    <div>${tick(rc[0], rc[1])}${st.titles.length ? tick(1, "RPCS3 input profile: "+st.titles.join(", ")) : tick(0, "Open Buzz! once in RPCS3 so it creates an input profile")}${st.mapped.length ? tick(1, "Players 1-4 mapped to the pads in: "+st.mapped.join(", ")) : `<div class="muted">Players 1-4 are mapped to the pads when you switch on.</div>`}</div>
+    <div class="muted">Keep the RPCS3 game window in front while you play: the pads type keys, and RPCS3 only reads the keyboard while it has focus. Switching off puts your previous RPCS3 controller settings back.</div>
+    <div class="log">${esc((st.log||[]).join("\n")) || "Press a button on a pad to see it here once the buzzers are on."}</div>
+  </section>
+  <section class="step"><header><h3>How it works</h3><span class="hint">Pad → PC → RPCS3 → game</span></header>
+    <ol>
+      <li>The IR receiver passes every pad's presses to this PC over USB.</li>
+      <li>The bridge turns each pad's buttons into keys: pad 1 uses 1-7, pad 2 Q-U, pad 3 A-J, pad 4 Z-M; the d-pad is the arrow keys on every pad.</li>
+      <li>RPCS3 players 1-4 are set to the keyboard with those keys.</li>
+      <li>RPCS3's Buzz! emulation (1 controller = 4 buzzers) hands players 1-4 to the game as buzzers 1-4.</li>
+    </ol>
+    <div class="qwrap"><table class="qtable"><thead><tr><th>Pad button</th><th>Buzzer button</th></tr></thead><tbody>
+      <tr><td>Big button</td><td>Red buzzer</td></tr><tr><td>X (blue)</td><td>Blue</td></tr><tr><td>B (red)</td><td>Orange</td></tr>
+      <tr><td>A (green)</td><td>Green</td></tr><tr><td>Y (yellow)</td><td>Yellow</td></tr><tr><td>Start / Back / d-pad</td><td>Menus</td></tr>
+    </tbody></table></div>
+  </section>`;
+  $("#bbtoggle").onchange = async e=>{
+    try{ renderBuzzers(await api("/api/buzzers",{op: e.target.checked?"start":"stop"})); }
+    catch(err){ renderBuzzers(); }
+  };
+  clearTimeout(bbTimer); bbTimer=setTimeout(()=>{ if(!P && $("#main h2")?.textContent==="Big Button buzzers") renderBuzzers(); }, 2000);
+}
+
+loadState().then(()=>{ srvPill(); bbPill(); const u=new URLSearchParams(location.search); const q=u.get("p"); if(q) openProject(q); else if(u.get("page")==="server") renderServer(); else if(u.get("page")==="buzzers") renderBuzzers(); });
 </script>
 </body>
 </html>

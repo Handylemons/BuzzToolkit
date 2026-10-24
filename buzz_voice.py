@@ -126,7 +126,8 @@ def _clone_args(opts):
 
 
 def _run(cmd):
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    # progress bars and non-English text are not always valid in the console code page
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode:
         raise RuntimeError("failed: %s\n%s" % (" ".join(cmd), r.stderr[-2000:]))
     return r.stdout

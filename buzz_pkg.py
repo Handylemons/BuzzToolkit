@@ -149,7 +149,7 @@ def param_sfo(entries):
     return struct.pack("<4sIIII", b"\0PSF", 0x101, kt, dt, len(entries)) + index + keys + data
 
 
-def build(path, content_id, files, finalized=True, content_type=4, version="01.00"):
+def build(path, content_id, files, finalized=True, content_type=4, version="01.00", install_dir=None):
     """files: [(path inside the title folder, data, flags)] - parent directories are added.
     Writes a PS3 PKG; returns its size."""
     assert len(content_id) == 36, "content id must be 36 characters"
@@ -179,7 +179,7 @@ def build(path, content_id, files, finalized=True, content_type=4, version="01.0
     for i, (noff, nsz, doff, dsz, flags) in enumerate(offs):
         struct.pack_into(">IIQQII", table, i * 0x20, noff, nsz, doff, dsz, flags, 0)
     plain = bytes(table) + bytes(body)
-    data_off = 0x140
+    data_off = 0x190 if install_dir else 0x140             # room for the extra metadata, as Sony's
     total = data_off + len(plain) + 0x20
     digest = hashlib.sha1(plain).digest()[:16]
     iv = hashlib.sha1(b"iv" + plain[:0x1000] + content_id.encode()).digest()[:16]
@@ -190,6 +190,9 @@ def build(path, content_id, files, finalized=True, content_type=4, version="01.0
             (3, struct.pack(">I", 0x0E)),                   # package flags (as community DLC packages)
             (4, struct.pack(">Q", total)),
             (5, struct.pack(">HBB", 0x1732, maj, mnr))]     # make_package_npdrm revision, pkg version
+    if install_dir:     # what Sony's own Buzz DLC carries: firmware + app version, install folder
+        meta += [(8, bytes.fromhex("02024000") + struct.pack(">BBH", maj, mnr, 0)), (9, bytes(8)),
+                 (0xA, bytes(8) + install_dir.encode().ljust(32, b"\0"))]
     mbytes = b"".join(struct.pack(">II", i, len(d)) + d for i, d in meta)
     hdr = bytearray(data_off)
     struct.pack_into(">IHHIIIIQQQ", hdr, 0, 0x7F504B47, rev, 1, 0xC0, len(meta), len(mbytes), len(items),
@@ -227,4 +230,4 @@ def build_pack_pkg(path, content_id, edats, version="01.00", finalized=True, dlc
                      ("TITLE", "Buzz!: Quiz TV"), ("TITLE_ID", dlc_title), ("VERSION", "01.00")])
     files = [("PARAM.SFO", sfo, T_FILE)]
     files += [("USRDIR/" + name, data, OVERWRITE | T_EDAT) for name, data in sorted(edats.items())]
-    return build(path, content_id, files, finalized=finalized, version=version)
+    return build(path, content_id, files, finalized=finalized, version=version, install_dir=dlc_title)

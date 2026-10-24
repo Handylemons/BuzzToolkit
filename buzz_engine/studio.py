@@ -26,7 +26,7 @@ sys.path.insert(0, ROOT)
 import build_pack  # noqa: E402
 from buzz_engine import content, game_update, importers, online, pack_numbers, plans, rounds, voices  # noqa: E402
 from buzz_engine.generate import generate, install_edat  # noqa: E402
-from buzz_engine import games  # noqa: E402
+from buzz_engine import buzzers, games  # noqa: E402
 
 PROJECTS = os.path.join(ROOT, "content", "projects")    # pack projects (content/packs = online catalogue)
 SETTINGS = os.path.join(HERE, "settings.json")
@@ -404,6 +404,16 @@ def act_server(a):
     return st
 
 
+def act_buzzers(a):
+    r = settings().get("rpcs3")
+    op = a.get("op", "status")
+    if op == "start":
+        return buzzers.start(r)
+    if op == "stop":
+        return buzzers.stop(r, restore=bool(a.get("restore", True)))
+    return buzzers.status(r)
+
+
 def act_catalog(a):
     online.set_enabled(a["file"], a["enabled"])
     return {"published": online.published()}
@@ -420,7 +430,7 @@ ACTIONS = {"new": act_new, "save": act_save, "import": act_import, "add": act_ad
            "generate": act_generate, "install": act_install, "settings": act_settings, "hook": act_hook,
            "open": act_open, "opentdb": act_opentdb, "publish": act_publish, "server": act_server,
            "catalog": act_catalog, "setup_pc": act_setup_pc, "keys": act_keys, "ffmpeg": act_ffmpeg,
-           "update": act_update}
+           "update": act_update, "buzzers": act_buzzers}
 
 
 class Handler(BaseHTTPRequestHandler):

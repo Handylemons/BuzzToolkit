@@ -22,9 +22,10 @@ import torch.nn.functional as F
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
-from chatterbox.tts import ChatterboxTTS  # noqa: E402
 from chatterbox.models.t3.modules.cond_enc import T3Cond  # noqa: E402
 from peft import LoraConfig, get_peft_model  # noqa: E402
+from voice_trainer.data import work_lang  # noqa: E402
+from voice_trainer.features import load_model  # noqa: E402
 from voice_trainer.data import batches, load_items  # noqa: E402
 
 PLEN = 150
@@ -76,7 +77,7 @@ def main(a):
     pool, _ = load_items(a.work)                          # any host clip can serve as the prompt
     print("train %d clips (%.1f h), val %d" % (len(train), sum(i["dur"] for i in train) / 3600, len(val)), flush=True)
     dev = "cuda"
-    model = ChatterboxTTS.from_pretrained(device=dev)
+    model = load_model(work_lang(a.work)[1])
     t3 = model.t3
     del model.s3gen
     torch.cuda.empty_cache()
