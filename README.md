@@ -133,11 +133,13 @@ If you install a PKG by hand, check its number first. The file name ends in it, 
 Example question files are in `examples/`. A `.buzz.txt` file is the easiest way to share a pack
 as plain text (see `examples/pub_quiz.buzz.txt`).
 
-### Installing on a real PS3 (untested)
+### Installing on a real PS3
 
-Packs are confirmed on RPCS3 only. They are built the same way as community-made DLC for modified
-consoles, so they should install on a PS3 running **HEN** or **custom firmware (CFW)**. They
-**cannot** install on an unmodified PS3: it only accepts packages signed by Sony.
+Packs install and play on a PS3 running **HEN** (confirmed: HEN 3.6.0 on firmware 4.93.1,
+BCES00644 with update 01.02, Italian pack, game started from a virtual disc mounted with
+multiMAN). They are built as
+*debug* packages, the format homebrew uses, so **custom firmware (CFW)** should install them too.
+They **cannot** install on an unmodified PS3: it only accepts packages signed by Sony.
 
 You need the disc the pack was made for. Discs that share a download folder can share packs:
 
@@ -153,18 +155,18 @@ You need the disc the pack was made for. Discs that share a download folder can 
    pack doesn't appear, note which language the game's menus are in.)
 2. **Check the pack number** isn't one of your official packs (see Pack numbers above). The app
    can only see what is installed in RPCS3, not on your console.
-3. Copy the `.pkg` from the pack's `output` folder to the **root of a FAT32 USB stick**.
+3. Copy the `.pkg` from the pack's `output` folder to the **root of a FAT32 USB stick**, or by
+   FTP (webMAN MOD) into `/dev_hdd0/packages/`.
 4. On HEN, **enable HEN first** (every time the console starts). Then install it from the XMB
-   under **Game → Package Manager → Install Package Files** (on CFW: **Game → Install Package
-   Files**).
+   under **Game → Package Manager → Install Package Files** (**Standard** lists
+   `/dev_hdd0/packages/`; on CFW: **Game → Install Package Files**).
 5. Start the game and open the pack list.
 
 The game patches in this toolkit (60 FPS, online) are for RPCS3 only. Packs don't need them.
 
 #### Troubleshooting on a console
 
-Nobody has tried this on a real console yet, so this is a list of what *could* go wrong, from
-the most likely to the least.
+Packs are confirmed on HEN; this is what can still go wrong, from the most likely to the least.
 
 **Where's my pack?** Each pack ends up as one file:
 `<download folder>/USRDIR/PACKnnnn/<LANG>PACKnnnn.EDAT`, for example
@@ -175,7 +177,7 @@ the pack.
 | What you see | Likely cause | What to try |
 |---|---|---|
 | The `.pkg` isn't offered for install | Unmodified firmware; HEN not enabled since the console started; the USB stick isn't FAT32; the file isn't in the stick's root | Enable HEN, or use a CFW console. Reformat the stick as FAT32 and put the `.pkg` in its root. |
-| The install stops with an error | The console's installer rejects the package. Our packages copy the layout of Sony's own Buzz packs but can't carry Sony's signature, so on a console this is the part most likely to fail. | Skip the package and copy the `.EDAT` by FTP (see below). |
+| The install stops with an error (e.g. `80029563`) | The package was made by toolkit 0.1.5 or older, which wrote unsigned *finalized* packages that RPCS3 accepts but a console rejects | Generate the pack again with this version and install the new `.pkg`. |
 | It installs, but the pack isn't in the game's list | The language doesn't match: the pack has a file for one language and the game runs in another | Make the pack in the language the game's menus are in (step 1). |
 | | Wrong disc: the pack went into the other download folder (`BCES00098` holds packs for 644/645, `BCES00195` for 647) | Check the table above, then rebuild the pack in a language from your disc. |
 | | The `.EDAT` was renamed, or copied into the wrong `PACKnnnn` folder | Use the exact file name and folder from the `output` folder. Its encryption is tied to the name. |
@@ -183,12 +185,10 @@ the pack.
 | An official pack disappeared, or shows our questions | Same pack number as an official pack: installing replaced it | Give the pack another number and reinstall the official pack. |
 | The pack plays, but the host is silent | Built without a voice for that language (Generate says *built without audio*). Not a console problem. | Make a voice for that language (see Host voice) and generate again. |
 
-**Copying the `.EDAT` by FTP instead of installing the `.pkg`:** with webMAN MOD or multiMAN
-running, connect an FTP client to the console and copy the `.EDAT` from the pack's `output`
-folder into `<download folder>/USRDIR/PACKnnnn/`. Create the `PACKnnnn` folder if needed, and
-don't rename the file. The download folder itself must already exist with its `PARAM.SFO`. It
-does if you have ever installed an official pack, or this pack's `.pkg`. Otherwise the game
-can't find any packs there.
+**Install the `.pkg`; don't build the download folder by hand.** A download folder created by
+FTP is ignored by the game, even with a correct `PARAM.SFO` (the Quiz Pack menu stays greyed
+out). The folder has to be created by the console's package installer. Putting the `.EDAT` in
+the game's own `USRDIR` makes the pack show up, but the game then freezes when a match starts.
 
 Please report what you see: console model, firmware with HEN or CFW name and version, disc ID, the
 game's language, the step that failed, and any error code shown (for example `8002xxxx`).
@@ -412,7 +412,8 @@ presses within a third of a second to count as two.
 
 ## Known issues
 
-* **Real PS3 consoles** (HEN / CFW) are untested; packs are confirmed on RPCS3 (PKG install via
+* **Real PS3 consoles:** confirmed on HEN (see *Installing on a real PS3*); CFW not yet tested.
+  Packs are also confirmed on RPCS3 (PKG install via
   *File → Install Packages/Raps/Edats* and *Copy straight into RPCS3*). See *Installing on a real
   PS3* for the steps and what to report. Unmodified consoles can't install them.
 * **Big Button buzzers** are tested up to RPCS3: receiver, driver check, key presses and the RPCS3

@@ -210,10 +210,81 @@ def build(path, content_id, files, finalized=True, content_type=4, version="01.0
     return len(out)
 
 
+def build_debug(path, content_id, files, content_type=4, package_flags=0x0E):
+    """Debug (non-finalized) PKG, laid out exactly like PSL1GHT's ps3py pkg.py (rev 1061) - the
+    format homebrew uses and that HEN/CFW package installers accept. A "finalized" package needs
+    Sony's ECDSA signatures, which nobody outside Sony can produce, so a real console rejects
+    one written by build() (error 80029563); RPCS3 never checks them.
+
+    Layout: header 0x80 | SHA1(header)[3:19] | 0x30 pad | metadata 0x40 | SHA1(meta)[3:19] |
+    0x30 pad | data (SHA-1 keystream from the QA digest) | 0x60 zero bytes.
+    files: [(path inside the title folder, data, flags)] - parent directories are added."""
+    assert len(content_id) == 36, "content id must be 36 characters"
+    items, seen = [], set()
+    for name, data, flags in files:
+        parts = name.split("/")
+        for i in range(1, len(parts)):
+            d = "/".join(parts[:i])
+            if d not in seen:
+                seen.add(d)
+                items.append((d, b"", OVERWRITE | T_DIR))
+        items.append((name, data, flags))
+    # entry table, then all names (16-aligned), then all file data (16-aligned) - PSL1GHT order
+    n = len(items)
+    off = 0x20 * n
+    name_offs = []
+    for name, _, _ in items:
+        name_offs.append(off)
+        off += (len(name.encode()) + 15) & ~15
+    data_offs = []
+    for _, data, _ in items:
+        data_offs.append(off)
+        off += (len(data) + 15) & ~15
+    table = b"".join(struct.pack(">IIQQII", name_offs[i], len(nm.encode()), data_offs[i], len(dt), fl, 0)
+                     for i, (nm, dt, fl) in enumerate(items))
+    names = b"".join(nm.encode() + bytes((-len(nm.encode())) % 16) for nm, _, _ in items)
+    body = b"".join(dt + bytes((-len(dt)) % 16) for _, dt, _ in items)
+    plain = table + names + body
+    data_size = len(plain)
+
+    def header(cid=b"", qa=bytes(16), klic=bytes(16)):
+        h = struct.pack(">IIIIIIQQQ", 0x7F504B47, 0x00000001, 0xC0, 5, 0x80, n,
+                        data_size + 0x1A0, 0x140, data_size)
+        return h + cid.ljust(0x30, b"\0") + qa + klic
+
+    # QA digest: SHA1 over every file's data, then the header (content id and digests still
+    # zero), then the entry table + names
+    qa = hashlib.sha1()
+    for _, data, flags in items:
+        if flags & 0xFF != T_DIR:
+            qa.update(data)
+    qa.update(header())
+    qa.update(table + names)
+    qa_digest = qa.digest()[:16]
+    klicensee = _debug_stream(qa_digest, bytes(16), 0xFFFFFFFFFFFFFFFF)
+    head = header(content_id.encode(), qa_digest, klicensee)
+    head_sha = hashlib.sha1(head).digest()[3:19]
+    meta = struct.pack(">" + "I" * 15 + "HH",
+                       1, 4, 3,                          # DRM type: free
+                       2, 4, content_type,               # 4 = game data, 5 = game exec
+                       3, 4, package_flags,
+                       4, 8, 0, data_size,               # u64: data size (as PSL1GHT writes it)
+                       5, 4, 0x1061, 0)                  # packaged by rev 0x1061, version 0
+    meta_sha = hashlib.sha1(meta).digest()[3:19]
+    meta_pad = _debug_stream(meta_sha, bytes(0x30))
+    meta_pad2 = _debug_stream(head_sha, meta_pad)
+    out = (head + head_sha + meta_pad2 + meta + meta_sha + meta_pad
+           + _debug_stream(qa_digest, plain) + bytes(0x60))
+    assert len(out) == data_size + 0x1A0
+    with open(path, "wb") as f:
+        f.write(out)
+    return len(out)
+
+
 BUZZ_DLC_TITLE = "BCES00098"      # Buzz!: Quiz TV game data - where Quiz World looks for packs
 
 
-def build_pack_pkg(path, content_id, edats, version="01.00", finalized=True, dlc_title=None):
+def build_pack_pkg(path, content_id, edats, version="01.00", finalized=False, dlc_title=None):
     """A custom quiz pack as an installable PKG. edats: {"PACK0099/GBRPACK0099.EDAT": bytes, ...}
     (one pack can carry several language files). Includes a PARAM.SFO for the DLC container that
     is only written if the folder has none (no overwrite flag), so an existing install is
@@ -229,5 +300,10 @@ def build_pack_pkg(path, content_id, edats, version="01.00", finalized=True, dlc
     sfo = param_sfo([("CATEGORY", "GD"), ("PARENTAL_LEVEL", 5), ("PS3_SYSTEM_VER", "02.4000"),
                      ("TITLE", "Buzz!: Quiz TV"), ("TITLE_ID", dlc_title), ("VERSION", "01.00")])
     files = [("PARAM.SFO", sfo, T_FILE)]
+    if not finalized:
+        # debug package (installs on HEN/CFW consoles and RPCS3); the EDATs go in as plain files,
+        # as homebrew packages carry them - the game does its own NPDRM check when it opens them
+        files += [("USRDIR/" + name, data, OVERWRITE | T_FILE) for name, data in sorted(edats.items())]
+        return build_debug(path, content_id, files)
     files += [("USRDIR/" + name, data, OVERWRITE | T_EDAT) for name, data in sorted(edats.items())]
     return build(path, content_id, files, finalized=finalized, version=version, install_dir=dlc_title)
