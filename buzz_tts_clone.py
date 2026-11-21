@@ -28,10 +28,10 @@ ENGLISH = ("en", "", None)
 def load(model_dir=None, device=None, lang=None):
     """lang: ISO language code of the pack ("en", "es", "pt", ...). Non-English packs use
     Chatterbox's multilingual model (23 languages)."""
-    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    device = device or ("cuda" if torch.cuda.is_available() and torch.cuda.device_count() > 0 else "cpu")
     if lang not in ENGLISH:
         from chatterbox.mtl_tts import ChatterboxMultilingualTTS
-        model = ChatterboxMultilingualTTS.from_pretrained(device=torch.device(device))
+        model = ChatterboxMultilingualTTS.from_pretrained(device=device)
         model.buzz_lang = lang
     else:
         model = ChatterboxTTS.from_pretrained(device=device)

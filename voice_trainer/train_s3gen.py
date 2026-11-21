@@ -18,7 +18,7 @@ import torch
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 from chatterbox.tts import ChatterboxTTS  # noqa: E402
-from voice_trainer.data import batches, load_items  # noqa: E402
+from voice_trainer.data import autocast, batches, free_cache, load_items, pick_device  # noqa: E402
 
 
 def collate(items, max_tokens=300):
@@ -45,10 +45,12 @@ def collate(items, max_tokens=300):
 def main(a):
     train, val = load_items(a.work)
     print("train %d clips (%.1f h), val %d" % (len(train), sum(i["dur"] for i in train) / 3600, len(val)), flush=True)
-    model = ChatterboxTTS.from_pretrained(device="cuda")
+    dev = pick_device()
+    print("device: %s" % dev, flush=True)
+    model = ChatterboxTTS.from_pretrained(device=dev)
     flow = model.s3gen.flow
     del model.t3
-    torch.cuda.empty_cache()
+    free_cache(dev)
     flow.train()
     params = [p for p in flow.parameters() if p.requires_grad]
     print("flow params %.1fM" % (sum(p.numel() for p in params) / 1e6), flush=True)
@@ -63,9 +65,9 @@ def main(a):
         flow.eval()
         torch.manual_seed(0)
         tot, n = 0.0, 0
-        with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
+        with torch.no_grad(), autocast(dev):
             for b in val_batches:
-                tot += flow.compute_loss(collate(b), "cuda")["loss"].item()
+                tot += flow.compute_loss(collate(b), dev)["loss"].item()
                 n += 1
         flow.train()
         return tot / max(n, 1)
@@ -75,8 +77,8 @@ def main(a):
     step, epoch, t0, run = 0, 0, time.time(), 0.0
     while step < a.steps:
         for b in batches(train, a.max_frames, seed=epoch):
-            with torch.autocast("cuda", dtype=torch.bfloat16):
-                loss = flow.compute_loss(collate(b), "cuda")["loss"]
+            with autocast(dev):
+                loss = flow.compute_loss(collate(b), dev)["loss"]
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(params, 1.0)

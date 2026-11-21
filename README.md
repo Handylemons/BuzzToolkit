@@ -1,4 +1,4 @@
-# Buzz Toolkit 0.1.5
+# Buzz Toolkit 0.1.6-beta.1
 
 Make your own quiz packs for **Buzz! Quiz World** (PS3, BCES00645) and host your own Buzz! online
 server, for playing on RPCS3 or a modded PS3.
@@ -22,8 +22,10 @@ copy** during setup.
 * **RPCS3** with Buzz! Quiz World (BCES00645) set up in it. The game's **update 01.02** is
   needed too; the app checks for it and can download it from Sony for you (step 5).
 * About 1 GB of free disk space (about 8 GB more for the optional host voice)
-* For the host voice (optional): an NVIDIA graphics card. Without one, packs still build, just
-  without the host reading the questions.
+* For the host voice (optional): an NVIDIA graphics card is strongly recommended. Without one the
+  voice runs on the processor instead: about 35 seconds per spoken line, and training a voice takes
+  about 15 hours. AMD Radeon RX 7000/9000 cards can be tried as a beta (see *Training without an
+  NVIDIA card*).
 
 ## Getting started
 
@@ -226,7 +228,22 @@ and writing numbers out as Czech or Croatian words. With only the quick sample t
 foreign, so **train these two voices**. Training uses 1,500 delivery steps for them
 automatically, so it takes about 2 hours rather than 1.
 
-Times measured on an RTX 3060 (12 GB). Faster cards are quicker; CPU-only training is not practical.
+Times measured on an RTX 3060 (12 GB). Faster cards are quicker. Without an NVIDIA card, see below.
+
+### Training without an NVIDIA card (beta)
+* **Any PC:** the trainer now uses the processor automatically when it finds no NVIDIA card. It
+  works but is slow. Measured on a desktop processor, for about 5,800 disc lines: `--preset
+  standard` about 15 hours, `--preset best` about 29 hours. Use `standard`. Finished stages are
+  skipped if you run the command again; a stage that was interrupted starts that stage over.
+  `--device cpu` or `--device cuda` forces a choice.
+* **AMD Radeon RX 7000/9000 (experimental, untested):** AMD's own PyTorch for Windows lists the
+  RX 9070/9060 XT, RX 7900 XTX and RX 7700/7800 family. AMD does not officially support training on
+  Windows, so the setup ends with a one-minute check. You need **Python 3.12** (python.org, with
+  the *py launcher*) and AMD driver **Adrenalin 26.2.2 or newer**. In the toolkit folder run
+  `powershell -ExecutionPolicy Bypass -File tools\setup_amd.ps1` (downloads several GB). It
+  creates `tools\clone_venv_amd` and prints PASS or FAIL. On PASS, train with
+  `tools\clone_venv_amd\Scripts\python -m voice_trainer.run ...` instead of `tools\clone_venv`.
+  On FAIL, use the processor route above. RX 6000 and older Radeon cards: processor only.
 
 ### How accurate is it?
 

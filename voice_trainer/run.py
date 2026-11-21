@@ -9,6 +9,9 @@ Presets (measured on an RTX 3060, English host, 24 held-out questions):
   standard  s3gen 1500 + t3 500 steps, ~1 h in total   speaker similarity 0.964, word errors 13.5%
   best      s3gen 4000 + t3 1000 steps, ~1 h 40 min    speaker similarity 0.959, word errors 14.9%
   (untrained base model: 0.886 / 13.9%.) Fewer than 500 t3 steps adds mispronunciations.
+  No NVIDIA GPU: --device auto falls back to the CPU. It works on any PC but is slow - measured
+  on a desktop CPU for 5.8k clips: standard ~15 h, best ~29 h. Use --preset standard there.
+  AMD Radeon RX 7000/9000 (EXPERIMENTAL): run tools/setup_amd.ps1, then use tools/clone_venv_amd's python.
   Czech/Croatian (spoken through the Polish model) default to t3 1500: 500 -> 1500 steps cut word
   errors 31.8% -> 27.3% (CZE) and 26.0% -> 19.6% (CRO), similarity 0.978/0.979 -> 0.982/0.980.
 
@@ -77,11 +80,15 @@ if __name__ == "__main__":
     ap.add_argument("--lang", default="INE", help="disc language of the host to learn: INE (English), "
                     "ESP, PRT, FRA, DEU, ITA, NLD, POL, RUS, GRC, CZE, CRO")
     ap.add_argument("--preset", choices=sorted(PRESETS), default="standard")
+    ap.add_argument("--device", choices=["auto", "cuda", "cpu", "mps"], default="auto",
+                    help="auto = NVIDIA GPU if present, else Apple GPU, else CPU (CPU works on any PC but is slow)")
     ap.add_argument("--s3gen-steps", type=int, default=None, help="override the preset")
     ap.add_argument("--t3-steps", type=int, default=None, help="override the preset")
     ap.add_argument("--retrain-t3", action="store_true", help="train the delivery again (e.g. with more "
                     "--t3-steps), reusing the corpus and voice; the previous one is kept as t3_lora.prev")
     a = ap.parse_args()
+    if a.device != "auto":
+        os.environ["BUZZ_TRAIN_DEVICE"] = a.device   # inherited by every step's subprocess
     a.s3gen_steps = a.s3gen_steps or PRESETS[a.preset][0]
     a.t3_steps = a.t3_steps or (max(1500, PRESETS[a.preset][1]) if a.lang in ("CZE", "CRO")
                                 else PRESETS[a.preset][1])

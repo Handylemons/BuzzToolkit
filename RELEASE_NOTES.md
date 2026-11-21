@@ -1,3 +1,77 @@
+# Buzz Toolkit 0.1.6-beta.1 (beta)
+
+**Beta: train and use the host voice without an NVIDIA graphics card.** This is a test release.
+If you have an NVIDIA card, nothing changes for you and you can stay on 0.1.5.
+
+## What's new
+* **Fixed: voice training stopped with "Found no NVIDIA driver on your system".** The trainer now
+  uses the processor automatically when there is no NVIDIA card. New option `--device auto|cuda|cpu`
+  (`auto` is the default).
+* **Fixed: on PCs without an NVIDIA card, non-English packs could not load their voice.** Packs
+  in Spanish, Greek, Czech and the other languages now use the processor too. In our test it took
+  about 35 seconds per spoken line.
+* **New, experimental: AMD Radeon RX 7000/9000.** A separate setup for AMD's own PyTorch, with a
+  one-minute check that tells you whether training works on your card.
+
+## How long training takes on a processor
+Measured on a desktop processor, about 5,800 disc lines (one language):
+
+| Stage | `--preset standard` | `--preset best` |
+|---|---|---|
+| Reading the disc lines | 3.7 h | 3.7 h |
+| Voice (timbre) | 4.2 h | 11 h |
+| Delivery | 7 h | 14 h |
+| **Total** | **about 15 h** | **about 29 h** |
+
+Use `--preset standard`. Leave the PC on and awake. Finished stages are skipped when you run the
+same command again; a stage that was interrupted starts over.
+
+## Installing the beta
+1. Download `BuzzToolkit-0.1.6-beta.1.zip` below.
+2. **Updating 0.1.5:** extract it over your existing BuzzToolkit folder and choose *Replace*.
+   Your settings, keys, voices, projects and installed voice files (`tools\clone_venv`) are kept,
+   because the zip contains none of them. **New install:** follow the README as usual.
+3. Train as before. Without an NVIDIA card, add `--preset standard`, for example:
+   `tools\clone_venv\Scripts\python -m voice_trainer.run --disc "<extracted game folder>" --work "<scratch folder>" --name buzz_host_GRC --lang GRC --preset standard`
+   The first lines it prints include `device: cpu` (or `device: cuda` on NVIDIA).
+   **If you already ran 0.1.5 and it stopped at "2 features":** use the same `--work` folder.
+   The disc lines it already decoded are reused.
+
+## Trying an AMD Radeon card (experimental)
+**Cards:** AMD lists the RX 9070 / 9070 XT / 9060 XT, RX 7900 XTX and the RX 7700/7800 family for
+its Windows PyTorch. RX 6000 and older cards are not supported: use the processor route.
+
+**Caution:** AMD's Windows notes say training is not officially supported, and we have not been able
+to test an AMD card ourselves. That is what this beta is for.
+
+1. Install **Python 3.12** from python.org and tick *py launcher*. Keep Python 3.11 too: the normal
+   voice setup still uses it.
+2. Update the AMD driver to **Adrenalin 26.2.2 or newer**.
+3. Open a Command Prompt in the BuzzToolkit folder and run:
+   `powershell -ExecutionPolicy Bypass -File tools\setup_amd.ps1`
+   It downloads several GB into a separate `tools\clone_venv_amd`, so your normal voice setup is not
+   touched. At the end it trains on dummy data for about a minute and prints **PASS** or **FAIL**.
+   For comparison, an RTX 3060 does about 1 step/s.
+4. **PASS:** train with the AMD environment:
+   `tools\clone_venv_amd\Scripts\python -m voice_trainer.run --disc ... --work ... --name ... --lang ... --preset standard`
+   It should print `device: cuda`. AMD cards appear under that name in PyTorch.
+5. **FAIL:** use the processor route above with `tools\clone_venv`.
+
+## Please send back
+Open an issue on GitHub (or reply where you got the link) with:
+* your graphics card and Windows version;
+* the **whole** output of `setup_amd.ps1` (AMD testers), PASS or FAIL;
+* from a training run, the lines that say `device:` and the `steps/s` lines;
+* any error, copied in full.
+Please do not include your game keys or anything from `settings.json`.
+
+## Known limits
+* The AMD route is untested. The one-minute check covers the voice stage only; the delivery stage
+  first runs in the real training.
+* Processor training is slow (see the table). Generating a pack's voice on the processor is also
+  slow: about 35 seconds per spoken line.
+* Online play and the server are unchanged from 0.1.5.
+
 # Buzz Toolkit 0.1.5
 
 **Czech and Croatian packs now have a host voice, every language on the three discs can be

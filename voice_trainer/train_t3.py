@@ -26,7 +26,7 @@ from chatterbox.models.t3.modules.cond_enc import T3Cond  # noqa: E402
 from peft import LoraConfig, get_peft_model  # noqa: E402
 from voice_trainer.data import work_lang  # noqa: E402
 from voice_trainer.features import load_model  # noqa: E402
-from voice_trainer.data import batches, load_items  # noqa: E402
+from voice_trainer.data import autocast, batches, free_cache, load_items, pick_device  # noqa: E402
 
 PLEN = 150
 
@@ -76,11 +76,12 @@ def main(a):
     train, val = load_items(a.work, need_text=True)
     pool, _ = load_items(a.work)                          # any host clip can serve as the prompt
     print("train %d clips (%.1f h), val %d" % (len(train), sum(i["dur"] for i in train) / 3600, len(val)), flush=True)
-    dev = "cuda"
+    dev = pick_device()
+    print("device: %s" % dev, flush=True)
     model = load_model(work_lang(a.work)[1])
     t3 = model.t3
     del model.s3gen
-    torch.cuda.empty_cache()
+    free_cache(dev)
     for p in t3.parameters():
         p.requires_grad_(False)
     t3.tfmr = get_peft_model(t3.tfmr, LoraConfig(r=a.rank, lora_alpha=2 * a.rank, lora_dropout=0.05,
@@ -100,7 +101,7 @@ def main(a):
         t3.eval()
         rng = random.Random(0)
         tot = 0.0
-        with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
+        with torch.no_grad(), autocast(dev):
             for b in val_b:
                 tot += step_loss(t3, b, pool, rng, dev, drop_text=0).item()
         t3.train()
@@ -112,7 +113,7 @@ def main(a):
     step, epoch, t0, run = 0, 0, time.time(), 0.0
     while step < a.steps:
         for b in batches(train, a.max_frames, seed=epoch):
-            with torch.autocast("cuda", dtype=torch.bfloat16):
+            with autocast(dev):
                 loss = step_loss(t3, b, pool, rng, dev)
             opt.zero_grad(set_to_none=True)
             loss.backward()

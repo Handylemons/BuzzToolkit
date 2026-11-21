@@ -1,4 +1,5 @@
 """Shared dataset helpers for the host-voice trainer (features written by features.py)."""
+import contextlib
 import glob
 import json
 import os
@@ -57,3 +58,24 @@ def held_out_texts(work, n=12):
     """Question texts of validation clips (for listening tests / evaluation)."""
     _, val = load_items(work, need_text=True)
     return [(it["id"], it["raw_text"]) for it in val[:n]]
+
+
+def pick_device():
+    """--device / BUZZ_TRAIN_DEVICE wins; else NVIDIA if present, Apple GPU, else CPU. Always a plain
+    string: Chatterbox maps CUDA-saved checkpoints to the CPU only for the strings "cpu"/"mps"."""
+    d = os.environ.get("BUZZ_TRAIN_DEVICE", "").strip().lower()
+    if d:
+        return d
+    if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+        return "cuda"
+    return "mps" if torch.backends.mps.is_available() else "cpu"
+
+
+def autocast(dev):
+    """bfloat16 mixed precision on NVIDIA; full precision on CPU/Apple (bf16 there is slow or unsupported)."""
+    return torch.autocast("cuda", dtype=torch.bfloat16) if dev == "cuda" else contextlib.nullcontext()
+
+
+def free_cache(dev):
+    if dev == "cuda":
+        torch.cuda.empty_cache()

@@ -27,7 +27,7 @@ sys.path.insert(0, HERE)
 
 from chatterbox.tts import ChatterboxTTS, punc_norm  # noqa: E402
 import buzz_respell  # noqa: E402
-from voice_trainer.data import work_lang  # noqa: E402
+from voice_trainer.data import pick_device, work_lang  # noqa: E402
 
 SHARD = 500
 
@@ -36,10 +36,10 @@ def load_model(iso):
     """English -> Chatterbox's English model; any other language -> the multilingual one (same
     S3Gen and voice encoder, its own T3 and text tokenizer)."""
     if iso == "en":
-        model = ChatterboxTTS.from_pretrained(device="cuda")
+        model = ChatterboxTTS.from_pretrained(device=pick_device())
     else:
         from chatterbox.mtl_tts import ChatterboxMultilingualTTS
-        model = ChatterboxMultilingualTTS.from_pretrained(device=torch.device("cuda"))
+        model = ChatterboxMultilingualTTS.from_pretrained(device=pick_device())
     model.buzz_iso = iso
     return model
 

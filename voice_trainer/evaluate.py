@@ -22,11 +22,12 @@ import torch
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 import buzz_tts_clone  # noqa: E402
-from voice_trainer.data import load_items, work_lang  # noqa: E402
+from voice_trainer.data import load_items, pick_device, work_lang  # noqa: E402
 
 
 class SpeakerScorer:
-    def __init__(self, dev="cuda"):
+    def __init__(self, dev=None):
+        dev = dev or pick_device()
         from transformers import AutoFeatureExtractor, WavLMForXVector
         self.fe = AutoFeatureExtractor.from_pretrained("microsoft/wavlm-base-plus-sv")
         self.m = WavLMForXVector.from_pretrained("microsoft/wavlm-base-plus-sv").to(dev).eval()
