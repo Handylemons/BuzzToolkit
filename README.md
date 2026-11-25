@@ -1,4 +1,4 @@
-# Buzz Toolkit 0.1.6-beta.1
+# Buzz Toolkit 0.1.6-beta.2
 
 Make your own quiz packs for **Buzz! Quiz World** (PS3, BCES00645) and host your own Buzz! online
 server, for playing on RPCS3 or a modded PS3.
@@ -212,6 +212,7 @@ Command Prompt opened in the toolkit folder (type `cmd` in the folder's address 
 * **Trained (about 1 hour, runs unattended):** learns the host's voice and delivery from every
   line on your disc. Much closer to the real host.
   `tools\clone_venv\Scripts\python -m voice_trainer.run --disc "<extracted game folder>" --work <scratch folder> --name buzz_host`
+  Add `--preview` first to hear samples and get a time estimate for your PC (see below).
   Add `--preset best` for a longer run (about 1 h 40 min); in our tests it sounded no better than
   the default. For another language, add `--lang` with the disc's code and name the voice after
   it, e.g. `--lang CZE --name buzz_host_CZE` (codes: ESP, PRT, FRA, DEU, ITA, NLD, POL, RUS, GRC,
@@ -230,20 +231,38 @@ automatically, so it takes about 2 hours rather than 1.
 
 Times measured on an RTX 3060 (12 GB). Faster cards are quicker. Without an NVIDIA card, see below.
 
+### Try it first: `--preview`
+Add `--preview` to the training command before the real run. It prepares about 500 disc lines,
+trains briefly and writes `<scratch folder>\preview\samples\`: five questions the trainer never
+saw, each as the **real host**, the **untrained** voice and the voice **after the preview**, plus
+`REPORT.txt` with similarity and misheard-word scores and **the time a full run will take on your
+PC**, from speeds measured there (a rough guide). On an RTX 3060 the preview takes about 6 minutes;
+on a processor just under an hour.
+Then run the same command without `--preview`: the lines it prepared are reused.
+
+**Stopping and carrying on.** Training saves every 15 minutes. Close the window or press Ctrl+C
+whenever you like; running the same command again carries on from the last save. Progress lines
+show the time left. Voices trained with 0.1.5 or 0.1.6-beta.1 are recognised and skipped. If one of
+those runs was stopped part-way, add `--retrain-s3gen` (voice) or `--retrain-t3` (delivery) to
+train that stage again.
+
 ### Training without an NVIDIA card (beta)
-* **Any PC:** the trainer now uses the processor automatically when it finds no NVIDIA card. It
-  works but is slow. Measured on a desktop processor, for about 5,800 disc lines: `--preset
-  standard` about 15 hours, `--preset best` about 29 hours. Use `standard`. Finished stages are
-  skipped if you run the command again; a stage that was interrupted starts that stage over.
-  `--device cpu` or `--device cuda` forces a choice.
+* **Any PC:** with no working GPU the trainer uses the processor. It works but is slow. Measured
+  on a desktop processor, for about 5,800 disc lines: `--preset standard` about 15 hours,
+  `--preset best` about 29 hours. Use `standard`, and run `--preview` first for your PC's own
+  estimate. `--device cpu` or `--device cuda` forces a choice.
+* **Processors with bfloat16 maths** (Ryzen 7000/9000 and some Intel Xeons; beta): add
+  `--precision bf16` to a second preview and compare its speed and samples with the first.
+  `tools\clone_venv\Scripts\python -m voice_trainer.gpu_check --cpu` times both in a few minutes.
 * **AMD Radeon RX 7000/9000 (experimental, untested):** AMD's own PyTorch for Windows lists the
   RX 9070/9060 XT, RX 7900 XTX and RX 7700/7800 family. AMD does not officially support training on
-  Windows, so the setup ends with a one-minute check. You need **Python 3.12** (python.org, with
-  the *py launcher*) and AMD driver **Adrenalin 26.2.2 or newer**. In the toolkit folder run
-  `powershell -ExecutionPolicy Bypass -File tools\setup_amd.ps1` (downloads several GB). It
-  creates `tools\clone_venv_amd` and prints PASS or FAIL. On PASS, train with
-  `tools\clone_venv_amd\Scripts\python -m voice_trainer.run ...` instead of `tools\clone_venv`.
-  On FAIL, use the processor route above. RX 6000 and older Radeon cards: processor only.
+  Windows, so the setup ends with a check of every kind of GPU work the trainer does. You need
+  **Python 3.12** (python.org, with the *py launcher*) and AMD driver **Adrenalin 26.2.2 or newer**.
+  In the toolkit folder run `powershell -ExecutionPolicy Bypass -File tools\setup_amd.ps1`
+  (downloads several GB). It creates `tools\clone_venv_amd` and prints PASS or FAIL. On PASS, use
+  `tools\clone_venv_amd\Scripts\python -m voice_trainer.run ... --preview`, then the full run. If it
+  says PASS only without MIOpen, add `--no-miopen` to every training command. On FAIL, use the
+  processor route above. RX 6000 and older Radeon cards: processor only.
 
 ### How accurate is it?
 

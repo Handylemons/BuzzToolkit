@@ -16,6 +16,7 @@ import glob
 import json
 import os
 import sys
+import time
 
 import librosa
 import numpy as np
@@ -27,7 +28,7 @@ sys.path.insert(0, HERE)
 
 from chatterbox.tts import ChatterboxTTS, punc_norm  # noqa: E402
 import buzz_respell  # noqa: E402
-from voice_trainer.data import pick_device, work_lang  # noqa: E402
+from voice_trainer.data import describe, pick_device, record_speed, work_lang  # noqa: E402
 
 SHARD = 500
 
@@ -80,7 +81,9 @@ def extract(model, wav24, text):
     return item
 
 
-def main(work):
+def main(work, limit=0):
+    """limit > 0 (run.py --preview): stop once that many clips are done, spread over the whole corpus so
+    questions and commentary are both in it. A later full run carries on from there."""
     out_dir = os.path.join(work, "features")
     os.makedirs(out_dir, exist_ok=True)
     man = [json.loads(l) for l in open(os.path.join(work, "manifest.jsonl"), encoding="utf-8")]
@@ -89,8 +92,16 @@ def main(work):
     for f in glob.glob(os.path.join(out_dir, "shard_*.pt")):
         done |= {it["id"] for it in torch.load(f)}
     todo = [m for m in man if m["id"] not in done]
+    if limit and len(done) < limit:
+        k = max(1, len(man) // limit)
+        todo = [m for m in man[::k] if m["id"] not in done][:limit - len(done)]
+    elif limit:
+        todo = []
     print("clips %d, already done %d, to do %d" % (len(man), len(done), len(todo)), flush=True)
-    model = load_model(work_lang(work)[1])
+    model = load_model(work_lang(work)[1]) if todo else None
+    if model is not None:
+        print(describe(str(model.device).split(":")[0]), flush=True)
+    t0 = time.time()
     shard_no = len(glob.glob(os.path.join(out_dir, "shard_*.pt")))
     buf = []
     for i, m in enumerate(todo):
@@ -102,8 +113,12 @@ def main(work):
             torch.save(buf, os.path.join(out_dir, "shard_%03d.pt" % shard_no))
             shard_no += 1
             buf = []
-            print("  %d/%d" % (i + 1, len(todo)), flush=True)
+            print("  %d/%d  %.2f s/clip" % (i + 1, len(todo), (time.time() - t0) / (i + 1)), flush=True)
+    if todo:
+        record_speed(work, "features_s_per_clip", round((time.time() - t0) / len(todo), 3), str(model.device).split(":")[0])
     speakers(work)
+    if not limit and len(done) + len(todo) >= len(man):
+        open(os.path.join(work, "features.done"), "w").write("%d clips" % len(man))
 
 
 def speakers(work):
@@ -128,4 +143,6 @@ def speakers(work):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--work", required=True)
-    main(ap.parse_args().work)
+    ap.add_argument("--limit", type=int, default=0, help="preview: only this many clips (reused by the full run)")
+    a = ap.parse_args()
+    main(a.work, a.limit)

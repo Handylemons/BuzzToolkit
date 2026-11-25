@@ -1,6 +1,7 @@
 # EXPERIMENTAL: voice trainer on an AMD Radeon GPU under Windows, using AMD's ROCm build of PyTorch.
 # AMD lists RX 9070/9060 XT, RX 7900 XTX and RX 7700 class cards (gfx1100/gfx1101/gfx1200/gfx1201); AMD does not
-# officially support training on Windows, so this ends with a one-minute GPU training check.
+# officially support training on Windows, so this ends with a quick check of every kind of GPU work the trainer does
+# (features, voice and delivery training; retried without MIOpen kernels if they fail).
 # Needs: Python 3.12 (python.org installer, with the "py" launcher) and AMD Adrenalin driver 26.2.2 or newer.
 # Run from the BuzzToolkit folder:  powershell -ExecutionPolicy Bypass -File tools\setup_amd.ps1
 # Creates tools\clone_venv_amd (the NVIDIA/CPU tools\clone_venv is left untouched).
@@ -25,4 +26,5 @@ if ($LASTEXITCODE) { throw "Installing AMD's PyTorch failed (see above)." }
 Push-Location $root
 try { & $py -m voice_trainer.gpu_check } finally { Pop-Location }
 if ($LASTEXITCODE) { Write-Host "GPU check FAILED - use tools\clone_venv (CPU) instead." -ForegroundColor Red; exit 1 }
-Write-Host "Ready. Train with:  tools\clone_venv_amd\Scripts\python -m voice_trainer.run ... --preset standard" -ForegroundColor Green
+Write-Host "Ready. Start with a preview (a short real run with samples and a time estimate):" -ForegroundColor Green
+Write-Host "  tools\clone_venv_amd\Scripts\python -m voice_trainer.run --disc ... --work ... --lang ... --preview" -ForegroundColor Green

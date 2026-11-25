@@ -57,7 +57,7 @@ def main(a):
     out = os.path.join(a.work, "eval", a.label)
     os.makedirs(out, exist_ok=True)
     import whisper
-    asr = whisper.load_model("small.en" if iso == "en" else "small")
+    asr = whisper.load_model("small.en" if iso == "en" else "small", device=pick_device())
     from buzz_tts_verify import wer  # noqa: E402  (same scoring as the pipeline check)
     sims, wers = [], []
     for it in val:

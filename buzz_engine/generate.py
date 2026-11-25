@@ -45,9 +45,10 @@ def generate(project, language=None, audio=True, out_dir=None, progress=print, r
         # a pack whose content was ported from another title brings its own recordings, so say
         # where the audio really comes from rather than naming a voice model that never runs
         ported = C.get("speech_source")
-        # only look for a TTS voice if the pack actually asks for one - a fully ported pack must
-        # not quietly pull in a default voice model it never uses
-        cfg = voices.voice_config(lang, C["voice"]) if C.get("voice") else None
+        # a fully ported pack must not quietly pull in a TTS voice it never uses; every other pack
+        # (Studio projects have no "voice" section) gets this language's host voice. 0.1.2 to 0.1.6-beta.1
+        # required a "voice" section, so every Studio pack was built silent.
+        cfg = voices.voice_config(lang, C.get("voice")) if (C.get("voice") or not ported) else None
         notes = []
         if ported:
             notes.append("original recordings from %s" % os.path.basename(ported["archive"]))

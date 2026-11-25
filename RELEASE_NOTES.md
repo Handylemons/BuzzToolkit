@@ -1,3 +1,106 @@
+# Buzz Toolkit 0.1.6-beta.2 (beta)
+
+**Fixes silent packs from Buzz Pack Studio, and is the second beta of voice training without an
+NVIDIA graphics card.** Everyone who makes packs in the Studio with the host voice should update.
+
+## What's new
+* **Fixed: packs made in Buzz Pack Studio had no host voice.** Since 0.1.2, Generate used the host
+  voice only for packs whose project names one, and projects made in the Studio never do. So every
+  Studio pack was built silent, even with a trained voice installed and "with host voice" shown. The
+  Generate log said "no ... host voice on this machine - built without audio" and "0 voiced lines".
+  After updating, **generate your packs again**. Voices you already trained are used as they are:
+  there is no need to train again.
+* **New: `--preview`, a short trial before the long run.** Add it to your training command. It
+  prepares about 500 disc lines, trains briefly, and writes `<scratch folder>\preview\`:
+  * `samples\`: five questions the trainer never saw, each read by the **real host**, by the
+    **untrained** voice and by the voice **after the preview**, so you can compare them;
+  * `REPORT.txt`: similarity and misheard-word scores, the speed measured on your PC, and the
+    **rough time estimate for a full run** with `--preset standard` and `--preset best`.
+
+  Measured: about 6 minutes on an RTX 3060, just under an hour on a Ryzen 7 5800X processor. The lines it
+  prepared are reused by the full run, so the time isn't lost.
+* **Fixed: stopping training threw away the rest of a stage.** In beta.1 (and 0.1.5), if a run was
+  stopped and started again, the stage that was running was skipped, leaving a part-trained voice.
+  Training now saves every 15 minutes, and running the same command again carries on from the last
+  save. Progress lines show the time left.
+* **Your PC's GPU is now tested before use.** If a card is visible but fails a test calculation (a
+  broken driver, or an AMD card the AMD software can't drive), the trainer warns and uses the
+  processor instead of crashing.
+* **AMD (experimental):** the setup check now runs every kind of GPU work the trainer does
+  (preparing lines, voice training and delivery training) and checks the results are valid numbers.
+  If AMD's MIOpen kernels fail, it retries without them and tells you to add `--no-miopen`. AMD's
+  fast kernel-search mode is switched on, to avoid long pauses on the first steps (untested on a
+  real AMD card).
+* **Graphics cards without native bfloat16** (e.g. NVIDIA GTX 10-series) now train at full
+  precision.
+* **Beta option for newer processors: `--precision bf16`.** Processors with native bfloat16 maths
+  (Ryzen 7000/9000, some Intel Xeons) may train faster with it. It is off by default because it has
+  not been measured on one yet. Without native support it is ignored: in our test on a Ryzen 7 5800X
+  it was 35 to 180 times slower.
+
+## If you are part-way through a beta.1 training run
+* **Easiest:** let it finish. The voice it makes is fine.
+* **Or stop it now** and install beta.2. Then run the same command with `--preset standard
+  --retrain-s3gen`. Beta.1 kept no record of how far it got, so this restarts the voice stage; the
+  prepared disc lines are kept. On a processor, `standard` takes far less time than `best`.
+
+## Installing the beta
+1. Download `BuzzToolkit-0.1.6-beta.2.zip` below.
+2. Extract it over your existing BuzzToolkit folder and choose *Replace*. Your settings, keys,
+   voices, projects and installed voice files (`tools\clone_venv`, `tools\clone_venv_amd`) are kept.
+   **New install:** follow the README as usual.
+3. Run a preview first, for example:
+   `tools\clone_venv\Scripts\python -m voice_trainer.run --disc "<extracted game folder>" --work "<scratch folder>" --name buzz_host_GRC --lang GRC --preview`
+   Listen to `<scratch folder>\preview\samples\` and read `REPORT.txt`.
+4. Then run the same command without `--preview`, with the preset you chose (`--preset standard`
+   on a processor). Stop it whenever you like; run it again to carry on.
+
+## Trying an AMD Radeon card (experimental)
+**Cards:** AMD lists the RX 9070 / 9070 XT / 9060 XT, RX 7900 XTX and the RX 7700/7800 family for
+its Windows PyTorch. RX 6000 and older: use the processor.
+
+**Caution:** AMD says training is not officially supported on Windows, and we have not tested an
+AMD card ourselves.
+
+1. Install **Python 3.12** from python.org and tick *py launcher*. Keep Python 3.11 as well.
+2. Update the AMD driver to **Adrenalin 26.2.2 or newer**.
+3. In a Command Prompt in the BuzzToolkit folder run
+   `powershell -ExecutionPolicy Bypass -File tools\setup_amd.ps1`
+   (downloads several GB into a separate `tools\clone_venv_amd`). If you installed it with beta.1,
+   running it again only re-runs the check. It ends with **PASS**, **PASS only WITHOUT MIOpen**
+   (add `--no-miopen` to your training commands) or **FAIL** (use the processor route).
+4. Run a preview with the AMD environment:
+   `tools\clone_venv_amd\Scripts\python -m voice_trainer.run --disc ... --work ... --name ... --lang ... --preview`
+   It should print `device: cuda <your card> (ROCm ...)`. AMD cards appear under that name in PyTorch.
+
+## For testers with a Ryzen 7000/9000 processor
+1. `tools\clone_venv\Scripts\python -m voice_trainer.gpu_check --cpu` (a few minutes) prints how
+   fast bf16 is compared with fp32 on your processor.
+2. If bf16 is faster, run two previews into **two different scratch folders**, one normal and one
+   with `--precision bf16`, and compare the times in both `REPORT.txt` files and how the samples
+   sound.
+
+## Please send back
+Open an issue on GitHub (or reply where you got the link) with:
+* your graphics card, processor and Windows version;
+* `preview\REPORT.txt` (the text only: please don't post the .wav files publicly, they contain the
+  game's audio) and whether the "after preview" samples sound closer to the real host;
+* AMD testers: the **whole** output of `setup_amd.ps1`;
+* Ryzen 7000/9000 testers: the output of `gpu_check --cpu`;
+* any error, copied in full.
+Please do not include your game keys or anything from `settings.json`.
+
+## Known limits
+* The AMD route is still untested on a real card. If it fails, the processor route works on any PC.
+  Running Linux on Windows (WSL2) is the route AMD officially supports for training. It is not
+  packaged yet; tell us if you would use it.
+* Processor training is slow: about 15 hours for `--preset standard`. Generating a pack's voice on
+  the processor takes about 35 seconds per spoken line.
+* Pack voices are always generated with `tools\clone_venv`. On an AMD PC that means the processor,
+  even if the voice was trained on the card.
+* The preview's scores come from only three lines, so they are a rough guide. Trust your ears.
+* Online play and the server are unchanged from 0.1.5.
+
 # Buzz Toolkit 0.1.6-beta.1 (beta)
 
 **Beta: train and use the host voice without an NVIDIA graphics card.** This is a test release.
@@ -23,8 +126,8 @@ Measured on a desktop processor, about 5,800 disc lines (one language):
 | Delivery | 7 h | 14 h |
 | **Total** | **about 15 h** | **about 29 h** |
 
-Use `--preset standard`. Leave the PC on and awake. Finished stages are skipped when you run the
-same command again; a stage that was interrupted starts over.
+Use `--preset standard`. Leave the PC on and awake. **Correction:** this beta said an interrupted
+stage starts over. It does not: it is skipped, leaving that stage part-trained. Fixed in 0.1.6-beta.2.
 
 ## Installing the beta
 1. Download `BuzzToolkit-0.1.6-beta.1.zip` below.
