@@ -1,3 +1,17 @@
+# Buzz Toolkit 0.1.5.1
+
+**Fixes silent packs from Buzz Pack Studio.** Everyone who makes packs in the Studio with the
+host voice should update.
+
+* **Fixed: packs made in Buzz Pack Studio had no host voice.** Since 0.1.2, Generate only used
+  a host voice when the pack's project file asked for one, and Studio projects never do. The
+  Studio showed "with host voice", but the log said "built without audio" and "0 voiced lines".
+  Packs now use this language's host voice unless they were ported from another Buzz game.
+* **What to do:** update, then press Generate again on each Studio pack. Trained voices are
+  fine as they are; no retraining is needed.
+* Nothing else changed from 0.1.5. The voice-training work (preview, resume, training without
+  an NVIDIA card) is in the 0.1.6 betas.
+
 # Buzz Toolkit 0.1.5
 
 **Czech and Croatian packs now have a host voice, every language on the three discs can be
